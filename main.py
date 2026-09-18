@@ -1,7 +1,7 @@
 import requests
 from pathlib import Path
 
-from find_schedule import find_schedule 
+from find_schedule import find_schedule, post_process_schedule, print_schedule
 
 
 BASE_URL = "https://norvuz.ru/upload/timetable/"
@@ -65,7 +65,9 @@ if __name__ == "__main__":
 
     print("\nПОИСК В РАСПИСАНИИ\n")
 
-    find_schedule(
-        "docs/1-ochnoe.xls",
-        "Громов"
+    results_raw = find_schedule(
+        [BASE_PATH_DOWNLOAD / file for file in files],
+        "Громов",
     )
+    results = post_process_schedule(results_raw, start_time_only=True)
+    print_schedule(results)
