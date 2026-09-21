@@ -1,0 +1,21 @@
+[project]
+name = "schedule-parsing"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic-settings>=2.0",
+    "fastapi[standard]>=0.141.1",
+    "requests>=2.34.2",
+    "xlrd>=2.0.2",
+]
+
+[dependency-groups]
+
+lint = [
+    "ruff>=0.16.8",
+]
+
+[tool.fastapi]
+entrypoint = "app.main:app"

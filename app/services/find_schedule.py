@@ -112,23 +112,23 @@ def post_process_schedule(
     return results
 
 
-def print_schedule(results: list[dict]) -> None:
-    """Выводим таблицу, не изменяя переданные значения."""
-    rows = [
-        [str(result[column]).splitlines() or [""] for column in COLUMNS]
-        for result in results
-    ]
-    widths = [
-        max([len(column)] + [len(line) for row in rows for line in row[index]])
-        for index, column in enumerate(COLUMNS)
-    ]
-    header = " | ".join(column.ljust(width) for column, width in zip(COLUMNS, widths))
-    print(header)
-    print("-" * len(header))
-    for row in rows:
-        for line_index in range(max(map(len, row))):
-            print(" | ".join(
-                (lines[line_index] if line_index < len(lines) else "").ljust(width)
-                for lines, width in zip(row, widths)
-            ))
-    print(f"\nВсего найдено: {len(results)}")
+# def print_schedule(results: list[dict]) -> None:
+#     """Выводим таблицу, не изменяя переданные значения."""
+#     rows = [
+#         [str(result[column]).splitlines() or [""] for column in COLUMNS]
+#         for result in results
+#     ]
+#     widths = [
+#         max([len(column)] + [len(line) for row in rows for line in row[index]])
+#         for index, column in enumerate(COLUMNS)
+#     ]
+#     header = " | ".join(column.ljust(width) for column, width in zip(COLUMNS, widths))
+#     print(header)
+#     print("-" * len(header))
+#     for row in rows:
+#         for line_index in range(max(map(len, row))):
+#             print(" | ".join(
+#                 (lines[line_index] if line_index < len(lines) else "").ljust(width)
+#                 for lines, width in zip(row, widths)
+#             ))
+#     print(f"\nВсего найдено: {len(results)}")
