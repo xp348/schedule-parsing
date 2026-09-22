@@ -12,9 +12,10 @@ headers = {
 }
 
 
-def download_file(name: str) -> Path:
+def download_file(name: str, *, directory: Path | None = None) -> Path:
     settings = get_settings()
-    save_to = settings.base_path_download / name
+    directory = directory if directory is not None else settings.base_path_download
+    save_to = directory / name
 
     response = requests.get(
         str(settings.base_url) + name,
@@ -27,6 +28,6 @@ def download_file(name: str) -> Path:
     if content.lstrip().lower().startswith((b"<html", b"<!doctype")):
         raise ValueError("Сервер вернул HTML вместо Excel-файла")
 
-    settings.base_path_download.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents=True, exist_ok=True)
     save_to.write_bytes(content)
     return save_to

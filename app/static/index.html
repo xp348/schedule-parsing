@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Поиск по расписанию</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f6fa; color: #18283b; font: 16px/1.5 system-ui, sans-serif; }
+    main { width: min(1200px, 100%); margin: 0 auto; padding: 48px 24px; }
+    .eyebrow { color: #32635f; font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 10px 0; font-size: clamp(1.8rem, 5vw, 2.8rem); line-height: 1.2; }
+    .intro { color: #526174; margin: 0 0 28px; }
+    form { padding: 24px; background: white; border: 1px solid #dce3ed; border-radius: 16px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; }
+    .controls { display: flex; gap: 12px; }
+    input, button { font: inherit; min-height: 48px; border-radius: 8px; }
+    input { flex: 1; min-width: 0; width: 100%; padding: 12px; border: 1px solid #98a7b8; }
+    button { border: 0; padding: 12px 28px; background: #175c54; color: white; font-weight: 600; cursor: pointer; }
+    button:hover { background: #104a44; }
+    button:disabled { opacity: .65; cursor: wait; }
+    :focus-visible { outline: 3px solid #377ded; outline-offset: 3px; }
+    #status { margin: 20px 0; color: #526174; overflow-wrap: anywhere; }
+    #status.error { color: #a32424; }
+    .table-wrap { overflow-x: auto; border: 1px solid #dce3ed; border-radius: 12px; background: white; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    caption { padding: 16px; text-align: left; font-weight: 700; border-bottom: 1px solid #dce3ed; }
+    th { background: #eaf0f5; color: #43536a; font-size: .85rem; }
+    th, td { padding: 14px 16px; vertical-align: top; border-bottom: 1px solid #e3e9f0; overflow-wrap: anywhere; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    td:nth-child(3), td:nth-child(5) { white-space: nowrap; }
+    td:last-child { min-width: 240px; }
+    [hidden] { display: none !important; }
+    @media (max-width: 640px) {
+      main { padding: 28px 16px; }
+      form { padding: 18px; }
+      .controls { flex-direction: column; }
+      .table-wrap { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+      table, tbody { display: block; }
+      caption { display: block; padding: 0 0 12px; border: 0; }
+      thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      tbody tr { display: block; margin-bottom: 14px; border: 1px solid #dce3ed; border-radius: 12px; background: white !important; padding: 6px 14px; }
+      tbody td { display: grid; grid-template-columns: minmax(0, 90px) minmax(0, 1fr); gap: 12px; padding: 10px 0; white-space: normal !important; min-width: 0 !important; }
+      tbody tr:last-child td { border-bottom: 1px solid #e3e9f0; }
+      tbody tr td:last-child { border-bottom: 0; }
+      td::before { content: attr(data-label); color: #526174; font-weight: 600; font-size: .85rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Расписание занятий</div>
+    <h1>Найдите своё расписание</h1>
+    <p class="intro">Введите фамилию преподавателя, группу или название дисциплины.</p>
+    <form id="search-form">
+      <label for="keyword">Что ищем?</label>
+      <div class="controls">
+        <input id="keyword" name="keyword" type="search" placeholder="Например, Громов" required aria-describedby="status">
+        <button type="submit">Найти расписание</button>
+      </div>
+    </form>
+    <p id="status" role="status" aria-live="polite">Результаты поиска появятся здесь.</p>
+    <div id="results" class="table-wrap" tabindex="0" role="region" aria-label="Результаты поиска" hidden>
+      <table role="table">
+        <caption>Найденные занятия</caption>
+        <thead role="rowgroup"><tr role="row">
+          <th scope="col" role="columnheader">Лист</th><th scope="col" role="columnheader">День</th>
+          <th scope="col" role="columnheader">Время</th><th scope="col" role="columnheader">Группа</th>
+          <th scope="col" role="columnheader">Ячейка</th><th scope="col" role="columnheader">Содержимое</th>
+        </tr></thead>
+        <tbody role="rowgroup"></tbody>
+      </table>
+    </div>
+    <noscript>Для поиска включите JavaScript в браузере.</noscript>
+  </main>
+  <script>
+    const form = document.querySelector('#search-form');
+    const input = document.querySelector('#keyword');
+    const button = form.querySelector('button');
+    const status = document.querySelector('#status');
+    const results = document.querySelector('#results');
+    const tbody = results.querySelector('tbody');
+    const columns = ['Лист', 'День', 'Время', 'Группа', 'Ячейка', 'Содержимое'];
+    let loading = false;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (loading) return;
+      const keyword = input.value.trim();
+      if (!keyword) {
+        status.textContent = 'Введите текст для поиска.';
+        status.className = 'error';
+        input.focus();
+        return;
+      }
+      loading = true;
+      button.disabled = true;
+      button.textContent = 'Ищем…';
+      results.hidden = true;
+      tbody.replaceChildren();
+      form.setAttribute('aria-busy', 'true');
+      status.className = '';
+      status.textContent = 'Загружаем расписание и ищем совпадения. Это может занять некоторое время…';
+      try {
+        const response = await fetch(`/schedule?${new URLSearchParams({ keyword })}`, {
+          headers: { Accept: 'application/json' },
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(typeof data?.detail === 'string' ? data.detail : `Ошибка сервера (${response.status}). Попробуйте ещё раз.`);
+        }
+        if (!Array.isArray(data)) throw new Error('Сервер вернул неожиданный ответ. Попробуйте ещё раз.');
+        const fragment = document.createDocumentFragment();
+        for (const item of data) {
+          const row = document.createElement('tr');
+          row.setAttribute('role', 'row');
+          for (const column of columns) {
+            const cell = document.createElement('td');
+            cell.setAttribute('role', 'cell');
+            cell.dataset.label = column;
+            const value = document.createElement('span');
+            value.textContent = item[column] === '' || item[column] == null ? '—' : String(item[column]);
+            cell.append(value);
+            row.append(cell);
+          }
+          fragment.append(row);
+        }
+        tbody.append(fragment);
+        results.hidden = data.length === 0;
+        status.textContent = data.length ? `Результатов: ${data.length}. Поиск: «${keyword}».` : `По запросу «${keyword}» ничего не найдено. Попробуйте другое слово.`;
+      } catch (error) {
+        status.className = 'error';
+        status.textContent = error instanceof TypeError ? 'Не удалось связаться с сервером. Проверьте соединение и повторите поиск.' : error.message;
+      } finally {
+        loading = false;
+        button.disabled = false;
+        button.textContent = 'Найти расписание';
+        form.setAttribute('aria-busy', 'false');
+      }
+    });
+  </script>
+</body>
+</html>
