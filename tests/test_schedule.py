@@ -1,12 +1,15 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from threading import Barrier
 from unittest.mock import MagicMock, patch
 
 import requests
 from fastapi.testclient import TestClient
 
 from app.config import Settings, get_settings
+from app.downloader import download_file, invalidate_downloads
 from app.main import app
 
 
@@ -20,6 +23,10 @@ class ScheduleTests(unittest.TestCase):
             base_url="https://example.org/schedule/",
             files=["test.xls"],
             base_path_download=self.root / "downloads",
+        )
+        invalidate_downloads(self.settings.files, base_url=str(self.settings.base_url))
+        self.addCleanup(
+            invalidate_downloads, self.settings.files, base_url=str(self.settings.base_url)
         )
         app.dependency_overrides[get_settings] = lambda: self.settings
         self.addCleanup(app.dependency_overrides.clear)
@@ -81,6 +88,75 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(response.status_code, 502)
         self.assertEqual(response.json()["detail"], "Сервер расписания вернул некорректный Excel-файл")
         self.assert_downloads_cleaned()
+        self.search()
+        self.assertEqual(self.get.call_count, 2)
+
+    def test_cache_expires_after_fifteen_minutes_without_sliding(self):
+        with (
+            patch("app.downloader.monotonic", return_value=100) as clock,
+            patch("app.services.schedule.find_schedule", return_value=[]),
+        ):
+            self.assertEqual(self.search().status_code, 200)
+            clock.return_value = 999
+            response = self.client.get("/schedule", params={"keyword": "Петров"})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(self.get.call_count, 1)
+            clock.return_value = 1000
+            self.assertEqual(self.search().status_code, 200)
+            self.assertEqual(self.get.call_count, 2)
+        self.assert_downloads_cleaned()
+
+    def test_failed_refresh_is_retried_without_serving_stale_data(self):
+        with (
+            patch("app.downloader.monotonic", return_value=100) as clock,
+            patch("app.services.schedule.find_schedule", return_value=[]),
+        ):
+            self.assertEqual(self.search().status_code, 200)
+            clock.return_value = 1000
+            self.get.side_effect = requests.Timeout("timeout")
+            self.assertEqual(self.search().status_code, 504)
+            self.get.side_effect = None
+            self.assertEqual(self.search().status_code, 200)
+            self.assertEqual(self.get.call_count, 3)
+        self.assert_downloads_cleaned()
+
+    def test_ttl_starts_after_download_finishes(self):
+        with patch("app.downloader.monotonic", return_value=100) as clock:
+            def finish_download(*args, **kwargs):
+                clock.return_value = 130
+                return self.get.return_value
+
+            self.get.side_effect = finish_download
+            download_file("test.xls", base_url=str(self.settings.base_url), directory=self.root)
+            clock.return_value = 1001
+            download_file("test.xls", base_url=str(self.settings.base_url), directory=self.root)
+            self.assertEqual(self.get.call_count, 1)
+
+    def test_parallel_downloads_share_cache(self):
+        barrier = Barrier(4)
+
+        def download(index):
+            barrier.wait(timeout=5)
+            path = download_file(
+                "test.xls", base_url=str(self.settings.base_url),
+                directory=self.root / str(index),
+            )
+            return path.read_bytes()
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            contents = list(executor.map(download, range(4)))
+        self.assertEqual(contents, [self.response.content] * 4)
+        self.get.assert_called_once()
+
+    def test_cache_distinguishes_source_urls(self):
+        other_url = "https://other.example.org/"
+        invalidate_downloads(["test.xls"], base_url=other_url)
+        self.addCleanup(invalidate_downloads, ["test.xls"], base_url=other_url)
+        download_file("test.xls", base_url=str(self.settings.base_url), directory=self.root)
+        self.response.content = b"another file"
+        path = download_file("test.xls", base_url=other_url, directory=self.root)
+        self.assertEqual(path.read_bytes(), b"another file")
+        self.assertEqual(self.get.call_count, 2)
 
     def test_storage_error(self):
         self.settings.base_path_download.write_text("a file blocks directory creation")
