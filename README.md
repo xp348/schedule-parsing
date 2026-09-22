@@ -17,8 +17,18 @@ BASE_PATH_DOWNLOAD=docs
 docker compose -f docker/compose.yaml up --build -d
 ```
 
-Откройте http://localhost:8000 — страницу поиска. Документация API:
-http://localhost:8000/docs.
+Откройте http://localhost:18080 — страницу поиска. Документация API:
+http://localhost:18080/docs.
+
+Проект Compose: `schedule-search`, контейнер: `schedule-search-app`,
+образ: `schedule-search:local`. Внешний порт по умолчанию — `18080`.
+Если он занят, задайте другой порт через переменную окружения `APP_PORT`.
+Например, в PowerShell:
+
+```powershell
+$env:APP_PORT = "18081"
+docker compose -f docker/compose.yaml up --build -d
+```
 
 Файлы развертывания находятся в `docker/`. Команды выполняются из корня проекта.
 `Dockerfile.dockerignore` задаёт исключения для сборки образа.
