@@ -1,14 +1,17 @@
 import re
 from pathlib import Path
+from zipfile import BadZipFile
 
 import xlrd
+from xlrd.biffh import XLRDError
+from xlrd.compdoc import CompDocError
 
+from app.exceptions import ScheduleParseError
 
 WEEKDAYS = (
     "понедельник", "вторник", "среда", "четверг",
     "пятница", "суббота", "воскресенье",
 )
-COLUMNS = ("Лист", "День", "Время", "Группа", "Ячейка", "Содержимое")
 
 
 def excel_column_name(col: int) -> str:
@@ -39,7 +42,7 @@ def get_cell_value(sheet, merged_map, row, col):
     return sheet.cell_value(real_row, real_col)
 
 
-def find_schedule(file_paths: list[str | Path], keyword: str) -> list[dict]:
+def _find_schedule(file_paths: list[str | Path], keyword: str) -> list[dict]:
     """Ищем текст во всех файлах и листах, сохраняя значения как есть.
 
     Поиск текста не зависит от регистра. Если день или заголовок аудитории
@@ -112,23 +115,11 @@ def post_process_schedule(
     return results
 
 
-# def print_schedule(results: list[dict]) -> None:
-#     """Выводим таблицу, не изменяя переданные значения."""
-#     rows = [
-#         [str(result[column]).splitlines() or [""] for column in COLUMNS]
-#         for result in results
-#     ]
-#     widths = [
-#         max([len(column)] + [len(line) for row in rows for line in row[index]])
-#         for index, column in enumerate(COLUMNS)
-#     ]
-#     header = " | ".join(column.ljust(width) for column, width in zip(COLUMNS, widths))
-#     print(header)
-#     print("-" * len(header))
-#     for row in rows:
-#         for line_index in range(max(map(len, row))):
-#             print(" | ".join(
-#                 (lines[line_index] if line_index < len(lines) else "").ljust(width)
-#                 for lines, width in zip(row, widths)
-#             ))
-#     print(f"\nВсего найдено: {len(results)}")
+
+def find_schedule(file_paths: list[str | Path], keyword: str) -> list[dict]:
+    try:
+        return _find_schedule(file_paths, keyword)
+    except (XLRDError, CompDocError, BadZipFile, EOFError, ValueError) as exc:
+        raise ScheduleParseError(
+            "Сервер расписания вернул некорректный Excel-файл"
+        ) from exc

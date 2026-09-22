@@ -11,7 +11,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 
-COPY config.py ./
 COPY app ./app
 RUN useradd --create-home appuser && mkdir -p /app/docs && chown appuser:appuser /app/docs
 USER appuser
