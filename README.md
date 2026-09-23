@@ -50,7 +50,7 @@ docker compose -f docker/compose.yaml down
 
 ```sh
 uv sync --locked
-uv run fastapi dev
+uv run python -m fastapi dev
 ```
 
 Страницу нужно открывать через FastAPI, а не как файл с диска.
