@@ -8,3 +8,4 @@ class ScheduleItem(BaseModel):
     group: str | int | float = Field(alias="Группа")
     cell: str = Field(alias="Ячейка")
     content: str | int | float = Field(alias="Содержимое")
+    room: str | int | float = Field(alias="Ауд")

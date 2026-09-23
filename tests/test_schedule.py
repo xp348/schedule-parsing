@@ -52,6 +52,7 @@ class ScheduleTests(unittest.TestCase):
             return [{
                 "Лист": "Лист 1", "День": "понедельник", "Время": "09:00:00",
                 "Группа": "  ИС-1  ", "Ячейка": "C5", "Содержимое": "Иванов",
+                "Ауд": "  301а  ",
             }]
 
         with patch("app.services.schedule.find_schedule", side_effect=parse):
@@ -59,6 +60,7 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()[0]["Время"], "09:00")
         self.assertEqual(response.json()[0]["Группа"], "ИС-1")
+        self.assertEqual(response.json()[0]["Ауд"], "301а")
         self.assertEqual(self.get.call_args.args[0], "https://example.org/schedule/test.xls")
         self.assert_downloads_cleaned()
 

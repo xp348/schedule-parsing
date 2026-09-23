@@ -86,6 +86,7 @@ def _find_schedule(file_paths: list[str | Path], keyword: str) -> list[dict]:
                             "Группа": group,
                             "Ячейка": f"{excel_column_name(col)}{row + 1}",
                             "Содержимое": value,
+                            "Ауд": get_cell_value(sheet, merged_map, row, col + 1),
                         })
     return results
 
