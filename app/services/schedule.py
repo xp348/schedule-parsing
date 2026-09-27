@@ -23,7 +23,7 @@ def search_schedule(keyword: str, settings: Settings) -> list[ScheduleItem]:
             except ScheduleParseError:
                 invalidate_downloads(settings.files, base_url=str(settings.base_url))
                 raise
-            results = post_process_schedule(results_raw, start_time_only=True)
+            results = post_process_schedule(results_raw, start_time_only=False)
             return [ScheduleItem.model_validate(item) for item in results]
     except OSError as exc:
         raise ScheduleStorageError(

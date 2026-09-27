@@ -13,6 +13,9 @@ WEEKDAYS = (
     "пятница", "суббота", "воскресенье",
 )
 
+# В XLS ширина задаётся в 1/256 ширины символа. Отсекаем почти свёрнутые колонки.
+MIN_TIME_COLUMN_WIDTH = 5 * 256
+
 
 def excel_column_name(col: int) -> str:
     """0 -> A, 1 -> B, 25 -> Z, 26 -> AA."""
@@ -42,11 +45,30 @@ def get_cell_value(sheet, merged_map, row, col):
     return sheet.cell_value(real_row, real_col)
 
 
+def time_column_offset(sheet, merged_map, row, weekday_col, lesson_col) -> int | None:
+    """Смещение до видимого столбца «Время» между днём недели и занятием.
+
+    Заголовок ищем выше занятия, учитывая объединения, регистр и пробелы.
+    Если подходящего столбца нет, возвращаем None.
+    """
+    for col in range(weekday_col + 1, lesson_col):
+        info = sheet.colinfo_map.get(col)
+        if info is not None and info.hidden:
+            continue
+        if sheet.computed_column_width(col) < MIN_TIME_COLUMN_WIDTH:
+            continue
+        for header_row in range(row - 1, -1, -1):
+            header = get_cell_value(sheet, merged_map, header_row, col)
+            if str(header).strip().casefold() == "время":
+                return col - weekday_col
+    return None
+
+
 def _find_schedule(file_paths: list[str | Path], keyword: str) -> list[dict]:
     """Ищем текст во всех файлах и листах, сохраняя значения как есть.
 
-    Поиск текста не зависит от регистра. Если день или заголовок аудитории
-    не найден по заданному направлению, соответствующие поля остаются пустыми.
+    Поиск текста не зависит от регистра. Если день, подходящий столбец времени
+    или заголовок аудитории не найден, соответствующие поля остаются пустыми.
     """
     results = []
     keyword = keyword.casefold()
@@ -69,7 +91,9 @@ def _find_schedule(file_paths: list[str | Path], keyword: str) -> list[dict]:
                             left_value = get_cell_value(sheet, merged_map, row, c)
                             if str(left_value).strip().casefold() in WEEKDAYS:
                                 weekday = left_value
-                                time = get_cell_value(sheet, merged_map, row, c + 1)
+                                offset = time_column_offset(sheet, merged_map, row, c, col)
+                                if offset is not None:
+                                    time = get_cell_value(sheet, merged_map, row, c + offset)
                                 break
 
                         for r in range(row - 1, -1, -1):
