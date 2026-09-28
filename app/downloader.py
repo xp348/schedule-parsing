@@ -14,7 +14,7 @@ HEADERS = {
     )
 }
 
-CACHE_TTL_SECONDS = 15 * 60
+CACHE_TTL_SECONDS = 60 * 60
 CACHE_MAX_FILES = 32
 _cache: OrderedDict[str, tuple[float, bytes]] = OrderedDict()
 _cache_lock = Lock()
@@ -46,7 +46,7 @@ def invalidate_downloads(names: list[str], *, base_url: str) -> None:
 
 
 def download_file(name: str, *, base_url: str, directory: Path) -> Path:
-    """Сохраняем копию файла; успешную загрузку кэшируем на 15 минут."""
+    """Сохраняем копию файла; успешную загрузку кэшируем на один час."""
     url = base_url + name
     save_to = directory / name
     directory.mkdir(parents=True, exist_ok=True)
