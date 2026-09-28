@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from app.parser import MIN_TIME_COLUMN_WIDTH, find_schedule
+from app.parser import MIN_TIME_COLUMN_WIDTH, find_schedule, post_process_schedule
 
 
 class TimeColumnTests(unittest.TestCase):
@@ -47,6 +47,24 @@ class TimeColumnTests(unittest.TestCase):
 
     def test_missing_header_leaves_time_empty(self):
         self.assertEqual(self.parse([""], {}), "")
+
+
+class PostProcessScheduleTests(unittest.TestCase):
+    def test_sorts_by_weekday_and_time(self):
+        results = post_process_schedule([
+            {"День": "Среда", "Время": "12:00", "Содержимое": "3"},
+            {"День": " понедельник ", "Время": "12.10 - 13.40", "Содержимое": "3-pair"},
+            {"День": "", "Время": "09:00", "Содержимое": "unknown"},
+            {"День": "понедельник", "Время": "", "Содержимое": "no-time"},
+            {"День": "вторник", "Время": "11:00", "Содержимое": "2"},
+            {"День": "понедельник", "Время": "8.40 - 10.10", "Содержимое": "1-pair"},
+            {"День": "понедельник", "Время": "10:20 - 11:50", "Содержимое": "2-pair"},
+        ])
+
+        self.assertEqual(
+            [result["Содержимое"] for result in results],
+            ["1-pair", "2-pair", "3-pair", "no-time", "2", "3", "unknown"],
+        )
 
 
 if __name__ == "__main__":

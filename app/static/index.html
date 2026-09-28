@@ -18,7 +18,7 @@
           sans-serif;
       }
       main {
-        width: min(1200px, 100%);
+        width: min(1280px, 100%);
         margin: 0 auto;
         padding: 48px 24px;
       }
@@ -109,12 +109,34 @@
       }
       table {
         width: 100%;
-        min-width: 820px;
+        min-width: 1080px;
         border-collapse: collapse;
         text-align: left;
+        table-layout: fixed;
+      }
+      col.sheet-column {
+        width: 88px;
+      }
+      col.day-column {
+        width: 160px;
+      }
+      col.time-column {
+        width: 188px;
+      }
+      col.group-column {
+        width: 112px;
+      }
+      col.cell-column {
+        width: 98px;
+      }
+      col.content-column {
+        width: auto;
+      }
+      col.room-column {
+        width: 92px;
       }
       caption {
-        padding: 16px;
+        padding: 18px 18px 16px;
         text-align: left;
         font-weight: 700;
         border-bottom: 1px solid #dce3ed;
@@ -123,13 +145,15 @@
         background: #eaf0f5;
         color: #43536a;
         font-size: 0.85rem;
+        white-space: nowrap;
       }
       th,
       td {
-        padding: 14px 16px;
+        padding: 16px 18px;
         vertical-align: top;
         border-bottom: 1px solid #e3e9f0;
-        overflow-wrap: anywhere;
+        overflow-wrap: normal;
+        word-break: normal;
       }
       tbody tr:last-child td {
         border-bottom: 0;
@@ -137,17 +161,85 @@
       tbody tr:nth-child(even) {
         background: #f8fafc;
       }
-      th:nth-child(2),
-      td:nth-child(2) {
-        white-space: nowrap;
-        overflow-wrap: normal;
+      tbody tr:hover {
+        background: #f0f7f5;
       }
+      tbody tr.day-start td {
+        border-top: 2px solid #b9cadc;
+      }
+      .sheet-name {
+        overflow-wrap: anywhere;
+        color: #526174;
+        display: inline-block;
+        line-height: 1.35;
+      }
+      .day-badge,
+      .group-badge,
+      .room-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 6px;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+      .day-badge {
+        background: #e7f0ff;
+        color: #244c7c;
+        padding: 5px 8px;
+      }
+      .time-value {
+        align-items: center;
+        color: #10243a;
+        display: inline-flex;
+        gap: 8px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .pair-badge {
+        background: #edf2f7;
+        border: 1px solid #d6e0eb;
+        border-radius: 999px;
+        color: #43536a;
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1;
+        padding: 5px 7px;
+      }
+      .group-badge {
+        text-wrap: wrap;
+        background: #edf7ef;
+        border: 1px solid #cfe5d3;
+        color: #285739;
+        padding: 4px 7px;
+      }
+      .cell-ref {
+        color: #526174;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+      .lesson-content {
+        color: #10243a;
+        display: inline-block;
+        line-height: 1.45;
+        max-width: 42ch;
+      }
+      .room-badge {
+        background: #fff4df;
+        border: 1px solid #ecd8af;
+        color: #684b13;
+        padding: 4px 7px;
+      }
+      .empty-value {
+        color: #7a8797;
+      }
+      td:nth-child(2),
       td:nth-child(3),
-      td:nth-child(5) {
+      td:nth-child(4),
+      td:nth-child(5),
+      td:nth-child(7) {
         white-space: nowrap;
-      }
-      td:nth-child(6) {
-        min-width: 240px;
       }
       [hidden] {
         display: none !important;
@@ -168,7 +260,7 @@
           flex-direction: column;
         }
         table {
-          min-width: 760px;
+          min-width: 980px;
           font-size: 0.875rem;
         }
         caption {
@@ -220,6 +312,15 @@
           aria-label="Результаты поиска — таблица с горизонтальной прокруткой"
         >
           <table role="table">
+            <colgroup>
+              <col class="sheet-column" />
+              <col class="day-column" />
+              <col class="time-column" />
+              <col class="group-column" />
+              <col class="cell-column" />
+              <col class="content-column" />
+              <col class="room-column" />
+            </colgroup>
             <caption>
               Найденные занятия
             </caption>
@@ -256,7 +357,72 @@
         "Содержимое",
         "Ауд",
       ];
+      const columnStyles = {
+        Лист: "sheet-name",
+        День: "day-badge",
+        Время: "time-value",
+        Группа: "group-badge",
+        Ячейка: "cell-ref",
+        Содержимое: "lesson-content",
+        Ауд: "room-badge",
+      };
+      const lessonStarts = [
+        { number: 1, minutes: 8 * 60 + 40 },
+        { number: 2, minutes: 10 * 60 + 20 },
+        { number: 3, minutes: 12 * 60 + 10 },
+        { number: 4, minutes: 13 * 60 + 50 },
+        { number: 5, minutes: 15 * 60 + 30 },
+        { number: 6, minutes: 17 * 60 + 10 },
+        { number: 7, minutes: 18 * 60 + 50 },
+        { number: 8, minutes: 20 * 60 + 30 },
+      ];
+      const lessonStartTolerance = 20;
       let loading = false;
+
+      function getLessonNumber(time) {
+        const match = String(time).match(/(\d{1,2})[.:](\d{2})/);
+        if (!match) return null;
+
+        const startMinutes = Number(match[1]) * 60 + Number(match[2]);
+        const nearest = lessonStarts.reduce((closest, lesson) => {
+          const distance = Math.abs(lesson.minutes - startMinutes);
+          return distance < closest.distance
+            ? { number: lesson.number, distance }
+            : closest;
+        }, { number: null, distance: Number.POSITIVE_INFINITY });
+
+        return nearest.distance <= lessonStartTolerance ? nearest.number : null;
+      }
+
+      function renderTimeValue(rawValue) {
+        const value = document.createElement("span");
+        value.className = "time-value";
+        
+        const lessonNumber = getLessonNumber(rawValue);
+        if (lessonNumber !== null) {
+          const pair = document.createElement("span");
+          pair.className = "pair-badge";
+          pair.textContent = `${lessonNumber} пара`;
+          value.append(pair);
+        }
+
+        const time = document.createElement("span");
+        time.textContent = String(rawValue);
+        value.append(time);
+
+        return value;
+      }
+
+      function renderValue(item, column) {
+        const rawValue = item[column];
+        const isEmpty = rawValue === "" || rawValue == null;
+        if (!isEmpty && column === "Время") return renderTimeValue(rawValue);
+
+        const value = document.createElement("span");
+        value.className = isEmpty ? "empty-value" : columnStyles[column];
+        value.textContent = isEmpty ? "—" : String(rawValue);
+        return value;
+      }
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -297,18 +463,19 @@
               "Сервер вернул неожиданный ответ. Попробуйте ещё раз.",
             );
           const fragment = document.createDocumentFragment();
+          let previousDay = "";
           for (const item of data) {
             const row = document.createElement("tr");
+            const day = String(item["День"] || "").trim().toLowerCase();
+            if (day && day !== previousDay) {
+              row.classList.add("day-start");
+              previousDay = day;
+            }
             row.setAttribute("role", "row");
             for (const column of columns) {
               const cell = document.createElement("td");
               cell.setAttribute("role", "cell");
-              const value = document.createElement("span");
-              value.textContent =
-                item[column] === "" || item[column] == null
-                  ? "—"
-                  : String(item[column]);
-              cell.append(value);
+              cell.append(renderValue(item, column));
               row.append(cell);
             }
             fragment.append(row);

@@ -12,9 +12,17 @@ WEEKDAYS = (
     "понедельник", "вторник", "среда", "четверг",
     "пятница", "суббота", "воскресенье",
 )
+WEEKDAY_ORDER = {day: index for index, day in enumerate(WEEKDAYS)}
 
 # В XLS ширина задаётся в 1/256 ширины символа. Отсекаем почти свёрнутые колонки.
 MIN_TIME_COLUMN_WIDTH = 5 * 256
+
+
+def time_sort_value(time) -> int:
+    match = re.search(r"\b(\d{1,2})[.:](\d{2})\b", str(time))
+    if not match:
+        return 24 * 60
+    return int(match.group(1)) * 60 + int(match.group(2))
 
 
 def excel_column_name(col: int) -> str:
@@ -141,6 +149,14 @@ def post_process_schedule(
                 match = re.match(r"^((?:[01]?\d|2[0-3]):[0-5]\d)\b", time)
                 if match:
                     result["Время"] = match.group(1)
+    results.sort(
+        key=lambda result: (
+            WEEKDAY_ORDER.get(
+                str(result.get("День", "")).strip().casefold(), len(WEEKDAYS)
+            ),
+            time_sort_value(result.get("Время", "")),
+        )
+    )
     return results
 
 
