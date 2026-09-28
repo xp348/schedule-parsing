@@ -46,7 +46,7 @@ def get_cell_value(sheet, merged_map, row, col):
 
 
 def time_column_offset(sheet, merged_map, row, weekday_col, lesson_col) -> int | None:
-    """Смещение до видимого столбца «Время» между днём недели и занятием.
+    """Смещение до видимого столбца «Время»/«Часы» между днём недели и занятием.
 
     Заголовок ищем выше занятия, учитывая объединения, регистр и пробелы.
     Если подходящего столбца нет, возвращаем None.
@@ -59,7 +59,7 @@ def time_column_offset(sheet, merged_map, row, weekday_col, lesson_col) -> int |
             continue
         for header_row in range(row - 1, -1, -1):
             header = get_cell_value(sheet, merged_map, header_row, col)
-            if str(header).strip().casefold() == "время":
+            if str(header).strip().casefold() in {"время", "часы"}:
                 return col - weekday_col
     return None
 

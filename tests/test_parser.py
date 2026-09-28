@@ -36,7 +36,9 @@ class TimeColumnTests(unittest.TestCase):
         self.assertEqual(self.parse(["Другое", "Время"], {}), "time-1")
 
     def test_accepts_normalized_merged_header_and_default_width(self):
-        self.assertEqual(self.parse(["  ВРЕМЯ\n"], {}, merged=True), "time-0")
+        for header in ("Время", "Часы", "  ВРЕМЯ\n", "  ЧАСЫ\n"):
+            with self.subTest(header=header):
+                self.assertEqual(self.parse([header], {}, merged=True), "time-0")
 
     def test_minimum_width(self):
         for width, expected in ((MIN_TIME_COLUMN_WIDTH - 1, ""), (MIN_TIME_COLUMN_WIDTH, "time-0")):
