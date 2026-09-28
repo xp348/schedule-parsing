@@ -211,24 +211,27 @@
       .day-cell {
         background: #f7fafc;
         color: #10243a;
+        height: 1px;
         font-size: 1.08rem;
         font-weight: 800;
         letter-spacing: 0;
         padding: 0;
-        position: relative;
         text-align: center;
         vertical-align: middle;
       }
       .day-cell-inner {
         align-items: center;
-        display: flex;
-        inset: 0;
+        display: grid;
+        height: 100%;
         justify-content: center;
-        position: absolute;
+        min-height: 100%;
+        place-items: center;
         width: 100%;
       }
       .day-label {
-        display: inline-block;
+        block-size: max-content;
+        display: block;
+        inline-size: max-content;
         line-height: 1;
         text-align: center;
         transform: rotate(-90deg);
@@ -392,7 +395,7 @@
                   </label>
                   <label class="toggle-control" for="show-current-week-only">
                     <input id="show-current-week-only" type="checkbox" />
-                    Только выбранная неделя
+                    Расписание с учетом чётности недели
                   </label>
                   <label class="toggle-control" for="show-next-week">
                     <input id="show-next-week" type="checkbox" />
@@ -649,6 +652,10 @@
         return cell;
       }
 
+      function dayLabelBlockSize(day) {
+        return `${Math.max(String(day).length + 1, 5)}ch`;
+      }
+
       function rowHasContent(scheduleRow) {
         return getVisibleItems(scheduleRow.items).some((item) =>
           hasValue(item["Содержимое"])
@@ -702,6 +709,7 @@
             day.rowSpan = visibleRows.length;
             const dayInner = document.createElement("span");
             dayInner.className = "day-cell-inner";
+            dayInner.style.minHeight = dayLabelBlockSize(group.label);
             const dayLabel = document.createElement("span");
             dayLabel.className = "day-label";
             dayLabel.textContent = group.label;
