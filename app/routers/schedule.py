@@ -11,7 +11,7 @@ router = APIRouter(prefix="/schedule", tags=["schedule"])
 
 @router.get("", response_model=list[ScheduleItem])
 def get_schedule(
-    keyword: Annotated[str, Query(min_length=1)],
+    keyword: Annotated[str, Query(min_length=3)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> list[ScheduleItem]:
     keyword = keyword.strip()
