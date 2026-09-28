@@ -65,6 +65,13 @@ class PostProcessScheduleTests(unittest.TestCase):
             [result["Содержимое"] for result in results],
             ["1-pair", "2-pair", "3-pair", "no-time", "2", "3", "unknown"],
         )
+        self.assertEqual(
+            [result["День"] for result in results],
+            [
+                "Понедельник", "Понедельник", "Понедельник", "Понедельник",
+                "Вторник", "Среда", "",
+            ],
+        )
 
 
 if __name__ == "__main__":
