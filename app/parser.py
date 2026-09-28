@@ -25,6 +25,12 @@ def time_sort_value(time) -> int:
     return int(match.group(1)) * 60 + int(match.group(2))
 
 
+def normalize_weekday(day):
+    if not isinstance(day, str):
+        return day
+    return day.strip().capitalize()
+
+
 def excel_column_name(col: int) -> str:
     """0 -> A, 1 -> B, 25 -> Z, 26 -> AA."""
     result = ""
@@ -142,6 +148,8 @@ def post_process_schedule(
         }
         for result in results_raw
     ]
+    for result in results:
+        result["День"] = normalize_weekday(result.get("День", ""))
     if start_time_only:
         for result in results:
             time = result.get("Время")
