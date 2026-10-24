@@ -42,8 +42,9 @@ def load_workbook(url):
     return xlrd.open_workbook(file_contents=contents, formatting_info=True)
 
 
-def main():
-    log_buffer = setup_memory_logging()
+def main(log_buffer=None):
+    if log_buffer is None:
+        log_buffer = setup_memory_logging()
     logger.info("Начало обработки расписания")
     sources = get_sources()
     final_schedule = []
@@ -53,7 +54,7 @@ def main():
             workbook = load_workbook(url)
         except (OSError, xlrd.XLRDError) as error:
             logger.error("Не удалось прочитать %s: %s", filename, error)
-            continue
+            raise
 
         with workbook:
             for sheet in workbook.sheets():
