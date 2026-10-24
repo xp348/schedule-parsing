@@ -1,5 +1,8 @@
+import logging
 import re
-import sys
+
+
+logger = logging.getLogger("schedule_parsing.head")
 
 
 def get_sheet_information(filename, sheet):
@@ -82,9 +85,7 @@ def warn_header(header, information, filename, sheet_name):
 
     for field, header_field, cell, description in fields:
         if information[field] is None:
-            print(
-                f"Предупреждение: {filename} / {sheet_name.strip()} / {cell}: "
-                f"не распознано поле «{description}». "
-                f"Исходная строка: {header[header_field]!r}",
-                file=sys.stderr,
+            logger.warning(
+                "%s / %s / %s: не распознано поле «%s». Исходная строка: %r",
+                filename, sheet_name.strip(), cell, description, header[header_field],
             )

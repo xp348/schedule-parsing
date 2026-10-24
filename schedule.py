@@ -1,4 +1,7 @@
+import logging
 import re
+
+logger = logging.getLogger("schedule_parsing.schedule")
 
 WEEKDAYS = {
     "понедельник",
@@ -180,6 +183,11 @@ def get_lessons(sheet, groups, weekdays, times):
                 continue
 
             time = get_value_for_row(times, row)
+            if time is None:
+                logger.warning(
+                    "%s / R%sC%s / %s: для занятия не найдено время",
+                    sheet.name.strip(), row, column, group["v"],
+                )
             classroom = get_classroom(sheet, row, column)
             lessons.append({
                 "group": group["v"],
