@@ -2,10 +2,9 @@ name: Обновление расписания
 
 on:
   schedule:
-    - cron: "30 9-17 * * 1-5"
-      timezone: Asia/Krasnoyarsk
-    - cron: "0 10-18 * * 1-5"
-      timezone: Asia/Krasnoyarsk
+    # UTC: 02:30–10:30 и 03:00–11:00 = 09:30–18:00 по Красноярску.
+    - cron: "30 2-10 * * 1-5"
+    - cron: "0 3-11 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -19,9 +18,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      DATA_WORKTREE: ${{ runner.temp }}/schedule-data
-
     steps:
       - name: Получить код из основной ветки
         uses: actions/checkout@v7
@@ -43,6 +39,8 @@ jobs:
 
       - name: Подготовить ветку data
         run: |
+          DATA_WORKTREE="$RUNNER_TEMP/schedule-data"
+          echo "DATA_WORKTREE=$DATA_WORKTREE" >> "$GITHUB_ENV"
           git ls-remote --heads origin refs/heads/data > "$RUNNER_TEMP/data-ref"
 
           if [ -s "$RUNNER_TEMP/data-ref" ]; then
