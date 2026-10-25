@@ -87,3 +87,22 @@ describe("room availability", () => {
     expect(getRoomState(room, "ПОНЕДЕЛЬНИК", { start: 520, end: 610 }).status).toBe("unknown")
   })
 })
+
+it("lists occupied rooms by overlapping time, excluding unknown availability and touching boundaries", () => {
+  const rows = [
+    lesson({ classroom: "М-101" }),
+    lesson({ classroom: "М-102", time: "9.00-10.00" }),
+    lesson({ classroom: "М-103", time: "10.10-11.00" }),
+    lesson({ classroom: "М-104", time: null }),
+  ]
+  const busy = createAvailabilityTable(rows, "busy")
+  expect(busy[0].intervals.find(({ start, end }) => start === 520 && end === 610)?.rooms).toEqual([
+    "М-101",
+    "М-102",
+  ])
+  expect(busy[0].intervals.find(({ start }) => start === 610)?.rooms).toEqual(["М-103"])
+  expect(busy[0].intervals.every(({ rooms }) => !rooms.includes("М-104"))).toBe(true)
+  const free = createAvailabilityTable(rows, "free")
+  expect(free[0].intervals.find(({ start }) => start === 520)?.rooms).toEqual(["М-103"])
+  expect(free[0].intervals.every(({ rooms }) => !rooms.includes("М-104"))).toBe(true)
+})

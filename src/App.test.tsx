@@ -48,9 +48,9 @@ describe("minimal timetable interface", () => {
     render(<App />)
     await screen.findByText("М-102")
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
-      "Группировка",
-      "Поиск",
-      "Свободные аудитории",
+      "Группы",
+      "Предметы",
+      "Аудитории",
     ])
     const table = screen.getByRole("table")
     expect(
@@ -137,8 +137,8 @@ describe("minimal timetable interface", () => {
     expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("102")
     expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
     expect(within(screen.getByRole("table")).queryByText("08:40")).toBeNull()
-    await user.click(screen.getByRole("tab", { name: "Поиск" }))
-    await user.click(screen.getByRole("tab", { name: "Свободные аудитории" }))
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Аудитории" }))
     expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("102")
     expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
 
@@ -220,14 +220,123 @@ describe("minimal timetable interface", () => {
     expect(within(table).getAllByText("М-103").length).toBeGreaterThan(0)
   })
 
-  it("switches to simple placeholders in the other two tabs", async () => {
+  it("shows the grouping table and a five-column subjects table", async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole("tab", { name: "Группировка" }))
-    expect(screen.getByText("Раздел «Группировка» в разработке.")).toBeTruthy()
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    const table = await screen.findByRole("table")
+    expect(within(table).getByRole("columnheader", { name: "День" }).getAttribute("rowspan")).toBe(
+      "5",
+    )
+    expect(within(table).getByRole("columnheader", { name: "Время" })).toBeTruthy()
+    expect(within(table).getByRole("columnheader", { name: "Группа: ИЭ-26" })).toBeTruthy()
+    expect(within(table).getByRole("columnheader", { name: "Группа: ИС-26" })).toBeTruthy()
+    expect(
+      within(table).getByRole("rowheader", { name: "Понедельник" }).getAttribute("rowspan"),
+    ).toBe("2")
+    const rows = within(table).getAllByRole("row").slice(5)
+    const firstCells = within(rows[0]).getAllByRole("cell")
+    const secondCells = within(rows[1]).getAllByRole("cell")
+    const groups = within(table)
+      .getAllByRole("columnheader")
+      .filter((header) => header.getAttribute("aria-label")?.startsWith("Группа:"))
+    const programmingColumn = groups.findIndex((header) => header.textContent === "ИЭ-26") + 1
+    const mathColumn = groups.findIndex((header) => header.textContent === "ИС-26") + 1
+    expect(within(firstCells[programmingColumn]).getByText("Программирование")).toBeTruthy()
+    expect(within(firstCells[programmingColumn]).getByText("Аудитория: М-101")).toBeTruthy()
+    expect(firstCells[mathColumn].textContent).toBe("")
+    expect(secondCells[programmingColumn].textContent).toBe("")
+    expect(within(secondCells[mathColumn]).getByText("Математика")).toBeTruthy()
+    expect(within(secondCells[mathColumn]).getByText("Аудитория: М-102")).toBeTruthy()
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    const subjectsTable = screen.getByRole("table")
+    expect(
+      within(subjectsTable)
+        .getAllByRole("columnheader")
+        .map((cell) => cell.textContent),
+    ).toEqual(["Дата", "Время", "Предмет", "Группы", "Аудитория"])
+    const subjectRows = within(subjectsTable).getAllByRole("row").slice(1)
+    expect(within(subjectRows[0]).getByText("Понедельник")).toBeTruthy()
+    expect(within(subjectRows[0]).getByText("08:40")).toBeTruthy()
+    expect(within(subjectRows[0]).getByText("Программирование")).toBeTruthy()
+    expect(within(subjectRows[0]).getByText("ИЭ-26")).toBeTruthy()
+    expect(within(subjectRows[0]).getByText("М-101")).toBeTruthy()
+    expect(within(subjectRows[1]).getByText("Математика")).toBeTruthy()
+  })
+
+  it("keeps grouping filters when switching tabs", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    const faculty = await screen.findByRole("toolbar", { name: "Факультет" })
+    await user.click(within(faculty).getByRole("button", { name: "Факультет не указан" }))
     expect(screen.queryByRole("table")).toBeNull()
-    await user.click(screen.getByRole("tab", { name: "Поиск" }))
-    expect(screen.getByText("Раздел «Поиск» в разработке.")).toBeTruthy()
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    expect(screen.queryByRole("table")).toBeNull()
+    const option = within(screen.getByRole("toolbar", { name: "Факультет" })).getByRole("button", {
+      name: "Факультет не указан",
+    })
+    expect(option.getAttribute("aria-pressed")).toBe("false")
+    await user.click(option)
+    expect(screen.getByRole("table")).toBeTruthy()
+  })
+
+  it("keeps selected groups, exclusion mode and cell search across tabs", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    await user.type(await screen.findByRole("combobox", { name: "Группы" }), "ИЭ-26")
+    await user.click(screen.getByRole("option", { name: "ИЭ-26" }))
+    await user.click(screen.getByRole("switch", { name: "Исключать выбранные группы" }))
+    await user.type(screen.getByRole("searchbox", { name: "Поиск по ячейкам" }), "Математика")
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    expect(screen.getByRole("button", { name: "Убрать группу ИЭ-26" })).toBeTruthy()
+    expect(
+      screen
+        .getByRole("switch", { name: "Исключать выбранные группы" })
+        .getAttribute("aria-checked"),
+    ).toBe("true")
+    expect(
+      (screen.getByRole("searchbox", { name: "Поиск по ячейкам" }) as HTMLInputElement).value,
+    ).toBe("Математика")
+    expect(
+      within(screen.getByRole("table")).queryByRole("columnheader", { name: "Группа: ИЭ-26" }),
+    ).toBeNull()
+    expect(within(screen.getByRole("table")).getByText("Математика")).toBeTruthy()
+  })
+
+  it("switches between free and occupied rooms and keeps the selection and mode across tabs", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const table = screen.getByRole("table")
+    await within(table).findByText("М-102")
+    const mode = screen.getByRole("radiogroup", { name: "Занятость аудиторий" })
+    expect(
+      within(mode).getByRole("radio", { name: "Свободные" }).getAttribute("aria-checked"),
+    ).toBe("true")
+    await user.click(within(mode).getByRole("radio", { name: "Занятые" }))
+    const rows = within(table).getAllByRole("row")
+    expect(within(rows[1]).getByRole("list", { name: "Занятые аудитории" }).textContent).toBe(
+      "М-101",
+    )
+    expect(within(rows[2]).getByRole("list", { name: "Занятые аудитории" }).textContent).toBe(
+      "М-102",
+    )
+    await user.type(screen.getByRole("combobox", { name: "Аудитория" }), "101")
+    await user.click(screen.getByRole("option", { name: "М-101" }))
+    expect(within(table).getAllByRole("row")).toHaveLength(2)
+    expect(within(table).getByText("08:40")).toBeTruthy()
+    expect(within(table).queryByText("10:20")).toBeNull()
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Аудитории" }))
+    expect(screen.getByRole("radio", { name: "Занятые" }).getAttribute("aria-checked")).toBe("true")
+    expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
+    await user.click(screen.getByRole("radio", { name: "Свободные" }))
+    const restoredTable = screen.getByRole("table")
+    expect(within(restoredTable).getByText("10:20")).toBeTruthy()
+    expect(within(restoredTable).queryByText("08:40")).toBeNull()
   })
 
   it("renders loading and error states inside the table and retries", async () => {

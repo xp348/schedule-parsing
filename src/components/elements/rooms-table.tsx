@@ -9,11 +9,19 @@ import {
   TableCaption,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { createAvailabilityTable, DAY_LABELS, DAYS, formatTime, type Lesson } from "@/lib/schedule"
+import {
+  createAvailabilityTable,
+  DAY_LABELS,
+  DAYS,
+  formatTime,
+  type Lesson,
+  type RoomAvailabilityMode,
+} from "@/lib/schedule"
 
 const SHORT_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
-interface FreeRoomsTableProps {
+interface RoomsTableProps {
+  mode: RoomAvailabilityMode
   lessons: Lesson[]
   loading: boolean
   error: string | null
@@ -21,14 +29,15 @@ interface FreeRoomsTableProps {
   selectedRooms?: string[]
 }
 
-export function FreeRoomsTable({
+export function RoomsTable({
+  mode,
   lessons,
   loading,
   error,
   onRetry,
   selectedRooms,
-}: FreeRoomsTableProps) {
-  const allDays = useMemo(() => createAvailabilityTable(lessons), [lessons])
+}: RoomsTableProps) {
+  const allDays = useMemo(() => createAvailabilityTable(lessons, mode), [lessons, mode])
   const days = useMemo(() => {
     if (!selectedRooms?.length) return allDays
     return allDays
@@ -47,9 +56,9 @@ export function FreeRoomsTable({
   return (
     <Table className="table-fixed">
       <TableCaption className="sr-only">
-        Свободные аудитории по дням и времени. Учитываются обе недели и только аудитории,
-        встречающиеся в расписании. Время по Красноярску. Доступность зависит от полноты исходных
-        данных.
+        {mode === "free" ? "Свободные" : "Занятые"} аудитории по дням и времени. Учитываются обе
+        недели и только аудитории, встречающиеся в расписании. Время по Красноярску. Доступность
+        зависит от полноты исходных данных.
       </TableCaption>
       <colgroup>
         <col className="w-11 sm:w-40" />
@@ -91,7 +100,9 @@ export function FreeRoomsTable({
           <TableRow>
             <TableCell colSpan={3} className="whitespace-normal">
               {selectedRooms?.length
-                ? "Для выбранных аудиторий свободных интервалов не найдено."
+                ? mode === "free"
+                  ? "Для выбранных аудиторий свободных интервалов не найдено."
+                  : "Для выбранных аудиторий занятых интервалов не найдено."
                 : "В расписании нет распознанных интервалов времени."}
             </TableCell>
           </TableRow>
@@ -130,13 +141,18 @@ export function FreeRoomsTable({
                   </TableCell>
                   <TableCell className="align-top whitespace-normal">
                     {rooms.length > 0 ? (
-                      <ul className="flex flex-wrap gap-2" aria-label="Свободные аудитории">
+                      <ul
+                        className="flex flex-wrap gap-2"
+                        aria-label={mode === "free" ? "Свободные аудитории" : "Занятые аудитории"}
+                      >
                         {rooms.map((room) => (
                           <li key={room}>{room}</li>
                         ))}
                       </ul>
                     ) : (
-                      <span className="text-muted-foreground">Нет свободных аудиторий</span>
+                      <span className="text-muted-foreground">
+                        {mode === "free" ? "Нет свободных аудиторий" : "Нет занятых аудиторий"}
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>

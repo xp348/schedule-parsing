@@ -144,7 +144,12 @@ export interface AvailabilityDay {
   intervals: (Interval & { rooms: string[] })[]
 }
 
-export function createAvailabilityTable(lessons: Lesson[]): AvailabilityDay[] {
+export type RoomAvailabilityMode = "free" | "busy"
+
+export function createAvailabilityTable(
+  lessons: Lesson[],
+  mode: RoomAvailabilityMode = "free",
+): AvailabilityDay[] {
   const rooms = collectRooms(lessons)
   const table: AvailabilityDay[] = []
 
@@ -154,8 +159,10 @@ export function createAvailabilityTable(lessons: Lesson[]): AvailabilityDay[] {
     if (slots.length === 0) continue
 
     const intervals = slots.map((interval) => {
-      const freeRooms = rooms.filter((room) => getRoomState(room, day, interval).status === "free")
-      return { ...interval, rooms: freeRooms.map((room) => room.name) }
+      const matchingRooms = rooms.filter(
+        (room) => getRoomState(room, day, interval).status === mode,
+      )
+      return { ...interval, rooms: matchingRooms.map((room) => room.name) }
     })
     table.push({ day, intervals })
   }
