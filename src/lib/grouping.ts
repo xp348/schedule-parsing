@@ -1,3 +1,4 @@
+import { filterLessonsByWeek, getLessonWeekParity, type WeekSelection } from "@/lib/week-parity"
 import { DAYS, getTimeSlots, parseTime, type Lesson } from "@/lib/schedule"
 
 const collator = new Intl.Collator("ru", { numeric: true })
@@ -53,7 +54,8 @@ export function createGroupingTable(lessons: Lesson[]) {
         !entries.some(
           (entry) =>
             entry.lesson.trim() === lesson.lesson.trim() &&
-            (entry.classroom?.trim() || "") === (lesson.classroom?.trim() || ""),
+            (entry.classroom?.trim() || "") === (lesson.classroom?.trim() || "") &&
+            getLessonWeekParity(entry) === getLessonWeekParity(lesson),
         )
       ) {
         entries.push(lesson)
@@ -150,4 +152,20 @@ export function searchGroupColumns(
       ),
     }))
     .filter((column) => keepEmptyColumns || column.lessonsBySlot.size > 0)
+}
+
+export function filterGroupColumnsByWeek(
+  columns: GroupColumn[],
+  week: WeekSelection,
+): GroupColumn[] {
+  if (week === "all") return columns
+  return columns.map((column) => ({
+    ...column,
+    lessonsBySlot: new Map(
+      [...column.lessonsBySlot].flatMap(([key, entries]) => {
+        const matches = filterLessonsByWeek(entries, week)
+        return matches.length ? [[key, matches] as const] : []
+      }),
+    ),
+  }))
 }

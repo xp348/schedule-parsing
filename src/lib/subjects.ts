@@ -1,6 +1,8 @@
+import { getLessonWeekParity, type WeekParity } from "@/lib/week-parity"
 import { DAYS, normalizeRoom, parseTime, type Lesson } from "@/lib/schedule"
 
 export interface SubjectRow {
+  weekParity?: WeekParity | null
   id: string
   weekday: string
   time: string | null
@@ -22,15 +24,17 @@ export function createSubjectsTable(lessons: Lesson[]): SubjectRow[] {
     const time = lesson.time?.trim() || null
     const interval = parseTime(time)
     const classroom = normalizeRoom(lesson.classroom)?.name || lesson.classroom?.trim() || null
+    const weekParity = getLessonWeekParity(lesson)
     const id = JSON.stringify([
       weekday,
       interval ? [interval.start, interval.end] : time,
       subject,
       classroom,
+      weekParity,
     ])
     let row = rows.get(id)
     if (!row) {
-      row = { id, weekday, time, subject, classroom, groups: [] }
+      row = { id, weekday, time, subject, classroom, weekParity, groups: [] }
       rows.set(id, row)
     }
     const group = lesson.group.trim()

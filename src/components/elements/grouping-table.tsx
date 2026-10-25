@@ -1,3 +1,4 @@
+import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import { GroupingFilters } from "@/components/elements/grouping-filters"
 import { GroupLesson } from "@/components/elements/group-lesson"
@@ -16,6 +17,7 @@ import {
   createGroupingHeaders,
   getGroupingFilterOptions,
   filterGroupColumns,
+  filterGroupColumnsByWeek,
   searchGroupColumns,
   type GroupingSearchState,
   groupingSlotKey,
@@ -24,6 +26,7 @@ import {
 import { DAYS, DAY_LABELS, formatTime, type Lesson } from "@/lib/schedule"
 
 interface GroupingTableProps {
+  week?: WeekSelection
   showEmptyRows?: boolean
   lessons: Lesson[]
   loading: boolean
@@ -36,6 +39,7 @@ interface GroupingTableProps {
 }
 
 export function GroupingTable({
+  week = "all",
   showEmptyRows = false,
   lessons,
   loading,
@@ -50,8 +54,12 @@ export function GroupingTable({
   const options = useMemo(() => getGroupingFilterOptions(all.columns), [all.columns])
   const columns = useMemo(
     () =>
-      searchGroupColumns(filterGroupColumns(all.columns, excludedValues), search, showEmptyRows),
-    [all.columns, excludedValues, search, showEmptyRows],
+      searchGroupColumns(
+        filterGroupColumnsByWeek(filterGroupColumns(all.columns, excludedValues), week),
+        search,
+        showEmptyRows,
+      ),
+    [all.columns, excludedValues, search, showEmptyRows, week],
   )
   const headers = useMemo(() => createGroupingHeaders(columns), [columns])
   const groups = useMemo(

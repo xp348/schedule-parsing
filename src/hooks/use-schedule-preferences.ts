@@ -2,10 +2,13 @@ import { useEffect, useState, type SetStateAction } from "react"
 import { INITIAL_GROUPING_SEARCH, type GroupingSearchState } from "@/lib/grouping"
 import type { RoomAvailabilityMode } from "@/lib/schedule"
 
+import { restoreWeekSelection, type WeekSelection } from "@/lib/week-parity"
+
 type ScheduleTab = "groups" | "subjects" | "rooms"
 
 interface SchedulePreferences {
   activeTab: ScheduleTab
+  weekSelection: Record<ScheduleTab, WeekSelection>
   showEmptyRows: Record<ScheduleTab, boolean>
   subjectQuery: string
   roomMode: RoomAvailabilityMode
@@ -30,12 +33,18 @@ function strings(value: unknown): string[] {
 function restorePreferences(value: unknown): SchedulePreferences {
   const saved = record(value)
   const emptyRows = record(saved.showEmptyRows)
+  const weeks = record(saved.weekSelection)
   const grouping = record(saved.groupingSearch)
   const excluded = Array.isArray(saved.excludedValues) ? saved.excludedValues : []
 
   return {
     activeTab:
       saved.activeTab === "groups" || saved.activeTab === "subjects" ? saved.activeTab : "rooms",
+    weekSelection: {
+      groups: restoreWeekSelection(weeks.groups),
+      subjects: restoreWeekSelection(weeks.subjects),
+      rooms: restoreWeekSelection(weeks.rooms),
+    },
     showEmptyRows: {
       groups: emptyRows.groups === true,
       subjects: emptyRows.subjects === true,

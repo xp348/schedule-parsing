@@ -1,3 +1,4 @@
+import { matchesWeek, type WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import { BroomIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,7 @@ import { DAYS, DAY_LABELS, formatTime, parseTime, type Lesson } from "@/lib/sche
 import { createSubjectsTable, addEmptySubjectSlots, getSubjectRowSpans } from "@/lib/subjects"
 
 interface SubjectsTableProps {
+  week?: WeekSelection
   showEmptyRows?: boolean
   query: string
   onQueryChange: (query: string) => void
@@ -34,6 +36,7 @@ function normalizeSubject(value: string) {
 }
 
 export function SubjectsTable({
+  week = "all",
   showEmptyRows = false,
   lessons,
   loading,
@@ -45,11 +48,13 @@ export function SubjectsTable({
   const allRows = useMemo(() => createSubjectsTable(lessons), [lessons])
   const rows = useMemo(() => {
     const normalized = normalizeSubject(query)
-    const matches = normalized
-      ? allRows.filter((row) => normalizeSubject(row.subject).includes(normalized))
-      : allRows
+    const matches = allRows.filter(
+      (row) =>
+        matchesWeek(row.weekParity, week) &&
+        (!normalized || normalizeSubject(row.subject).includes(normalized)),
+    )
     return showEmptyRows ? addEmptySubjectSlots(lessons, matches) : matches
-  }, [allRows, query, showEmptyRows, lessons])
+  }, [allRows, query, showEmptyRows, lessons, week])
 
   const rowSpans = useMemo(() => getSubjectRowSpans(rows), [rows])
 
@@ -118,7 +123,9 @@ export function SubjectsTable({
                 <span role="status">
                   {allRows.length && normalizeSubject(query)
                     ? "Предметы по запросу не найдены."
-                    : "В расписании нет предметов."}
+                    : allRows.length && week !== "all"
+                      ? "Для выбранной недели предметы не найдены."
+                      : "В расписании нет предметов."}
                 </span>
               </TableCell>
             </TableRow>

@@ -19,6 +19,11 @@ it("restores every preference after unmounting, including unfinished queries and
     first.result.current.updatePreference("activeTab", "groups")
     first.result.current.updatePreference("subjectQuery", "  Математика  ")
     first.result.current.updatePreference("roomMode", "busy")
+    first.result.current.updatePreference("weekSelection", {
+      groups: "even",
+      subjects: "odd",
+      rooms: "all",
+    })
     first.result.current.updatePreference("showEmptyRows", {
       groups: true,
       subjects: false,
@@ -55,6 +60,11 @@ it.each(["invalid JSON", "null", "[]", "42"])(
     const { result } = renderHook(useSchedulePreferences)
     expect(result.current.preferences.activeTab).toBe("rooms")
     expect(result.current.preferences.roomMode).toBe("free")
+    expect(result.current.preferences.weekSelection).toEqual({
+      groups: "all",
+      subjects: "all",
+      rooms: "all",
+    })
     expect(result.current.preferences.excludedValues).toEqual([[], [], [], []])
   },
 )
@@ -66,6 +76,7 @@ it("keeps valid fields and sanitizes corrupted fields and duplicate selections",
       activeTab: "removed-tab",
       subjectQuery: "Физика",
       roomMode: "unknown",
+      weekSelection: { groups: "even", subjects: "invalid", rooms: true },
       showEmptyRows: { groups: true, subjects: "true", rooms: false },
       groupingSearch: {
         selectedGroups: ["ИС-23", null, "ИС-23", "ИЭ-23"],
@@ -81,6 +92,7 @@ it("keeps valid fields and sanitizes corrupted fields and duplicate selections",
     activeTab: "rooms",
     subjectQuery: "Физика",
     roomMode: "free",
+    weekSelection: { groups: "even", subjects: "all", rooms: "all" },
     showEmptyRows: { groups: true, subjects: false, rooms: false },
     groupingSearch: {
       selectedGroups: ["ИС-23", "ИЭ-23"],

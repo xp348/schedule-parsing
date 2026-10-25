@@ -1,3 +1,4 @@
+import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import {
   Table,
@@ -21,6 +22,7 @@ import {
 const SHORT_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
 interface RoomsTableProps {
+  week?: WeekSelection
   showEmptyRows?: boolean
   mode: RoomAvailabilityMode
   lessons: Lesson[]
@@ -31,6 +33,7 @@ interface RoomsTableProps {
 }
 
 export function RoomsTable({
+  week = "all",
   showEmptyRows = false,
   mode,
   lessons,
@@ -39,7 +42,7 @@ export function RoomsTable({
   onRetry,
   selectedRooms,
 }: RoomsTableProps) {
-  const allDays = useMemo(() => createAvailabilityTable(lessons, mode), [lessons, mode])
+  const allDays = useMemo(() => createAvailabilityTable(lessons, mode, week), [lessons, mode, week])
   const days = useMemo(() => {
     return allDays
       .map((day) => ({
@@ -59,9 +62,9 @@ export function RoomsTable({
   return (
     <Table className="table-fixed">
       <TableCaption className="sr-only">
-        {mode === "free" ? "Свободные" : "Занятые"} аудитории по дням и времени. Учитываются обе
-        недели и только аудитории, встречающиеся в расписании. Время по Красноярску. Доступность
-        зависит от полноты исходных данных.
+        {mode === "free" ? "Свободные" : "Занятые"} аудитории по дням и времени. Учитываются
+        выбранная чётность недели и только аудитории, встречающиеся в расписании. Время по
+        Красноярску. Доступность зависит от полноты исходных данных.
       </TableCaption>
       <colgroup>
         <col className="w-11 sm:w-40" />

@@ -1,3 +1,4 @@
+import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import { RoomsTable } from "@/components/elements/rooms-table"
 import { RoomSearch } from "@/components/elements/room-search"
@@ -5,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { collectRooms, type Lesson, type RoomAvailabilityMode } from "@/lib/schedule"
 
 interface RoomsProps {
+  week?: WeekSelection
   showEmptyRows?: boolean
   mode: RoomAvailabilityMode
   onModeChange: (mode: RoomAvailabilityMode) => void
@@ -19,6 +21,7 @@ interface RoomsProps {
 }
 
 export function Rooms({
+  week = "all",
   showEmptyRows = false,
   mode,
   onModeChange,
@@ -48,7 +51,9 @@ export function Rooms({
         <ToggleGroupItem value="busy">Занятые</ToggleGroupItem>
       </ToggleGroup>
       <p className="text-sm text-muted-foreground">
-        Чётность недели не учитывается: занятия чётных и нечётных недель объединены.
+        {week === "all"
+          ? "Показаны занятия чётных и нечётных недель вместе."
+          : "Занятость рассчитана для выбранной недели с учётом записей без определённой чётности."}
       </p>
       <RoomSearch
         rooms={rooms}
@@ -59,6 +64,7 @@ export function Rooms({
         onChange={onRoomsChange}
       />
       <RoomsTable
+        week={week}
         showEmptyRows={showEmptyRows}
         mode={mode}
         lessons={lessons}

@@ -1,8 +1,11 @@
+import { filterLessonsByWeek, type WeekParity, type WeekSelection } from "@/lib/week-parity"
+
 export const DAYS = ["ПОНЕДЕЛЬНИК", "ВТОРНИК", "СРЕДА", "ЧЕТВЕРГ", "ПЯТНИЦА", "СУББОТА"] as const
 export const DAY_LABELS = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
 export type Weekday = (typeof DAYS)[number]
 
 export interface Lesson {
+  week_parity?: WeekParity | null
   group: string
   time: string | null
   weekday: string
@@ -149,8 +152,12 @@ export type RoomAvailabilityMode = "free" | "busy"
 export function createAvailabilityTable(
   lessons: Lesson[],
   mode: RoomAvailabilityMode = "free",
+  week: WeekSelection = "all",
 ): AvailabilityDay[] {
-  const rooms = collectRooms(lessons)
+  const rooms = collectRooms(lessons).map((room) => ({
+    ...room,
+    lessons: filterLessonsByWeek(room.lessons, week),
+  }))
   const table: AvailabilityDay[] = []
 
   for (const day of DAYS) {

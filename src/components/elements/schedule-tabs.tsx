@@ -1,3 +1,4 @@
+import { WeekSelector } from "@/components/elements/week-selector"
 import { EmptyRowsToggle } from "@/components/elements/empty-rows-toggle"
 import { GroupingTable } from "@/components/elements/grouping-table"
 import { SubjectsTable } from "@/components/elements/subjects-table"
@@ -15,8 +16,15 @@ const sections = [
 
 export function ScheduleTabs() {
   const { preferences, updatePreference } = useSchedulePreferences()
-  const { activeTab, showEmptyRows, subjectQuery, roomMode, groupingSearch, excludedValues } =
-    preferences
+  const {
+    activeTab,
+    weekSelection,
+    showEmptyRows,
+    subjectQuery,
+    roomMode,
+    groupingSearch,
+    excludedValues,
+  } = preferences
   const { lessons, loading, error, reload } = useSchedule()
   const { selectedRooms, query, setSelectedRooms, setQuery } = useRoomSearch()
 
@@ -36,6 +44,12 @@ export function ScheduleTabs() {
         ))}
       </TabsList>
       <TabsContent value="groups" className="m-0 min-w-0">
+        <WeekSelector
+          value={weekSelection.groups}
+          onChange={(value) =>
+            updatePreference("weekSelection", (previous) => ({ ...previous, groups: value }))
+          }
+        />
         <EmptyRowsToggle
           checked={showEmptyRows.groups}
           onCheckedChange={(checked) =>
@@ -43,6 +57,7 @@ export function ScheduleTabs() {
           }
         />
         <GroupingTable
+          week={weekSelection.groups}
           showEmptyRows={showEmptyRows.groups}
           lessons={lessons}
           loading={loading}
@@ -61,6 +76,12 @@ export function ScheduleTabs() {
         />
       </TabsContent>
       <TabsContent value="subjects" className="m-0 min-w-0">
+        <WeekSelector
+          value={weekSelection.subjects}
+          onChange={(value) =>
+            updatePreference("weekSelection", (previous) => ({ ...previous, subjects: value }))
+          }
+        />
         <EmptyRowsToggle
           checked={showEmptyRows.subjects}
           onCheckedChange={(checked) =>
@@ -68,6 +89,7 @@ export function ScheduleTabs() {
           }
         />
         <SubjectsTable
+          week={weekSelection.subjects}
           showEmptyRows={showEmptyRows.subjects}
           lessons={lessons}
           loading={loading}
@@ -78,6 +100,12 @@ export function ScheduleTabs() {
         />
       </TabsContent>
       <TabsContent value="rooms" className="m-0 min-w-0">
+        <WeekSelector
+          value={weekSelection.rooms}
+          onChange={(value) =>
+            updatePreference("weekSelection", (previous) => ({ ...previous, rooms: value }))
+          }
+        />
         <EmptyRowsToggle
           checked={showEmptyRows.rooms}
           onCheckedChange={(checked) =>
@@ -85,6 +113,7 @@ export function ScheduleTabs() {
           }
         />
         <Rooms
+          week={weekSelection.rooms}
           showEmptyRows={showEmptyRows.rooms}
           mode={roomMode}
           onModeChange={(value) => updatePreference("roomMode", value)}
