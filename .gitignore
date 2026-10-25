@@ -2,3 +2,9 @@
 __pycache__/
 /output/
 /logs/
+
+dist
+node_modules
+public
+tsconfig.app.tsbuildinfo
+tsconfig.node.tsbuildinfo

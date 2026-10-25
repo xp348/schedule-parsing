@@ -172,23 +172,30 @@ def get_lessons(sheet, groups, weekdays, times):
         row_text, column_text = address[1:].split("C")
         first_row = int(row_text) + group["row"]
         column = int(column_text)
+        seen_lessons = set()
 
         for row in range(first_row, sheet.nrows + 1):
             weekday = get_value_for_row(weekdays, row)
             if weekday is None:
                 continue
 
-            lesson = " ".join(str(sheet.cell_value(row - 1, column - 1)).split())
+            lesson = get_cell_text(sheet, row, column)
             if not lesson:
                 continue
 
             time = get_value_for_row(times, row)
+            classroom = get_classroom(sheet, row, column)
+            # Объединённая ячейка читается из каждой строки и для каждой группы.
+            # Внутри одной группы и интервала сохраняем занятие только один раз.
+            key = (weekday, time, lesson, classroom)
+            if key in seen_lessons:
+                continue
+            seen_lessons.add(key)
             if time is None:
                 logger.warning(
                     "%s / R%sC%s / %s: для занятия не найдено время",
                     sheet.name.strip(), row, column, group["v"],
                 )
-            classroom = get_classroom(sheet, row, column)
             lessons.append({
                 "group": group["v"],
                 "time": time,
