@@ -124,6 +124,7 @@ export const INITIAL_GROUPING_SEARCH: GroupingSearchState = {
 export function searchGroupColumns(
   columns: GroupColumn[],
   search: GroupingSearchState,
+  keepEmptyColumns = false,
 ): GroupColumn[] {
   const selected = columns.filter(
     (column) =>
@@ -148,5 +149,5 @@ export function searchGroupColumns(
         }),
       ),
     }))
-    .filter((column) => column.lessonsBySlot.size > 0)
+    .filter((column) => keepEmptyColumns || column.lessonsBySlot.size > 0)
 }

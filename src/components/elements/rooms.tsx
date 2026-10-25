@@ -5,6 +5,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { collectRooms, type Lesson, type RoomAvailabilityMode } from "@/lib/schedule"
 
 interface RoomsProps {
+  showEmptyRows?: boolean
   mode: RoomAvailabilityMode
   onModeChange: (mode: RoomAvailabilityMode) => void
   lessons: Lesson[]
@@ -18,6 +19,7 @@ interface RoomsProps {
 }
 
 export function Rooms({
+  showEmptyRows = false,
   mode,
   onModeChange,
   lessons,
@@ -57,6 +59,7 @@ export function Rooms({
         onChange={onRoomsChange}
       />
       <RoomsTable
+        showEmptyRows={showEmptyRows}
         mode={mode}
         lessons={lessons}
         loading={loading}

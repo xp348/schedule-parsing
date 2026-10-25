@@ -21,6 +21,7 @@ import {
 const SHORT_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
 interface RoomsTableProps {
+  showEmptyRows?: boolean
   mode: RoomAvailabilityMode
   lessons: Lesson[]
   loading: boolean
@@ -30,6 +31,7 @@ interface RoomsTableProps {
 }
 
 export function RoomsTable({
+  showEmptyRows = false,
   mode,
   lessons,
   loading,
@@ -39,19 +41,20 @@ export function RoomsTable({
 }: RoomsTableProps) {
   const allDays = useMemo(() => createAvailabilityTable(lessons, mode), [lessons, mode])
   const days = useMemo(() => {
-    if (!selectedRooms?.length) return allDays
     return allDays
       .map((day) => ({
         ...day,
         intervals: day.intervals
           .map((interval) => ({
             ...interval,
-            rooms: interval.rooms.filter((room) => selectedRooms.includes(room)),
+            rooms: selectedRooms?.length
+              ? interval.rooms.filter((room) => selectedRooms.includes(room))
+              : interval.rooms,
           }))
-          .filter((interval) => interval.rooms.length > 0),
+          .filter((interval) => showEmptyRows || interval.rooms.length > 0),
       }))
       .filter((day) => day.intervals.length > 0)
-  }, [allDays, selectedRooms])
+  }, [allDays, selectedRooms, showEmptyRows])
 
   return (
     <Table className="table-fixed">
@@ -103,7 +106,11 @@ export function RoomsTable({
                 ? mode === "free"
                   ? "Для выбранных аудиторий свободных интервалов не найдено."
                   : "Для выбранных аудиторий занятых интервалов не найдено."
-                : "В расписании нет распознанных интервалов времени."}
+                : allDays.length
+                  ? mode === "free"
+                    ? "Нет свободных аудиторий"
+                    : "Нет занятых аудиторий"
+                  : "В расписании нет распознанных интервалов времени."}
             </TableCell>
           </TableRow>
         </TableBody>

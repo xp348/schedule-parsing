@@ -339,6 +339,123 @@ describe("minimal timetable interface", () => {
     expect(within(restoredTable).queryByText("08:40")).toBeNull()
   })
 
+  it("searches subjects, reports missing matches and keeps the query across tabs", async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [...fixtures, { ...fixtures[0], lesson: "Теория   вероятностей" }],
+    } as Response)
+    render(<App />)
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await screen.findByText("Математика")
+    const input = screen.getByRole("searchbox", { name: "Поиск по предмету" })
+    await user.type(input, "  МАТЕМАТИКА  ")
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(2)
+    expect(screen.getByText("Математика")).toBeTruthy()
+    expect(screen.queryByText("Программирование")).toBeNull()
+    await user.click(screen.getByRole("tab", { name: "Аудитории" }))
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    const restoredInput = screen.getByRole("searchbox", { name: "Поиск по предмету" })
+    expect((restoredInput as HTMLInputElement).value).toBe("  МАТЕМАТИКА  ")
+    await user.clear(restoredInput)
+    await user.type(restoredInput, "вероятностёй")
+    expect(screen.getByText("Теория вероятностей")).toBeTruthy()
+    await user.clear(restoredInput)
+    await user.type(restoredInput, "М-101")
+    expect(screen.getByRole("status").textContent).toBe("Предметы по запросу не найдены.")
+    await user.click(screen.getByRole("button", { name: "Очистить поиск по предмету" }))
+    expect((restoredInput as HTMLInputElement).value).toBe("")
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(4)
+  })
+
+  it("keeps empty room intervals and days on request, independently of other tabs", async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [...fixtures, { ...fixtures[1], weekday: "ВТОРНИК", time: "12.10-13.40" }],
+    } as Response)
+    render(<App />)
+    await within(screen.getByRole("table")).findByText("М-102")
+    await user.click(screen.getByRole("radio", { name: "Занятые" }))
+    await user.type(screen.getByRole("combobox", { name: "Аудитория" }), "101")
+    await user.click(screen.getByRole("option", { name: "М-101" }))
+    const toggle = screen.getByRole("switch", { name: "Показывать пустые дни и время" })
+    expect(toggle.getAttribute("aria-checked")).toBe("false")
+    expect(within(screen.getByRole("table")).queryByText("12:10")).toBeNull()
+    await user.click(toggle)
+    expect(within(screen.getByRole("table")).getByText("12:10")).toBeTruthy()
+    expect(
+      within(screen.getByRole("table")).getByRole("rowheader", { name: "Вторник" }),
+    ).toBeTruthy()
+    expect(
+      within(screen.getByRole("table"))
+        .getByRole("rowheader", { name: "Понедельник" })
+        .getAttribute("rowspan"),
+    ).toBe("2")
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    expect(
+      screen
+        .getByRole("switch", { name: "Показывать пустые дни и время" })
+        .getAttribute("aria-checked"),
+    ).toBe("false")
+    await user.click(screen.getByRole("tab", { name: "Аудитории" }))
+    expect(
+      screen
+        .getByRole("switch", { name: "Показывать пустые дни и время" })
+        .getAttribute("aria-checked"),
+    ).toBe("true")
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    expect(within(screen.getByRole("table")).queryByText("12:10")).toBeNull()
+  })
+
+  it("shows empty group rows under filters and cell search only when enabled", async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [...fixtures, { ...fixtures[1], weekday: "ВТОРНИК", time: "12.10-13.40" }],
+    } as Response)
+    render(<App />)
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    await user.type(await screen.findByRole("combobox", { name: "Группы" }), "ИЭ-26")
+    await user.click(screen.getByRole("option", { name: "ИЭ-26" }))
+    expect(within(screen.getByRole("table")).queryByText("12:10")).toBeNull()
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    expect(within(screen.getByRole("table")).getByText("12:10")).toBeTruthy()
+    await user.type(screen.getByRole("searchbox", { name: "Поиск по ячейкам" }), "нет совпадений")
+    expect(within(screen.getByRole("table")).getByText("08:40")).toBeTruthy()
+    expect(within(screen.getByRole("table")).getByText("12:10")).toBeTruthy()
+    expect(within(screen.getByRole("table")).queryByText("Программирование")).toBeNull()
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    expect(screen.queryByRole("table")).toBeNull()
+    expect(screen.getByRole("status").textContent).toContain("Занятия по запросу не найдены")
+  })
+
+  it("shows blank subject rows with day and time while searching when enabled", async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [...fixtures, { ...fixtures[1], weekday: "ВТОРНИК", time: "12.10-13.40" }],
+    } as Response)
+    render(<App />)
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    const input = screen.getByRole("searchbox", { name: "Поиск по предмету" })
+    await user.type(input, "Программирование")
+    await screen.findByText("Программирование")
+    expect(screen.getAllByRole("row")).toHaveLength(2)
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    expect(screen.getAllByRole("row")).toHaveLength(4)
+    const emptyRow = screen.getAllByRole("row").find((row) => within(row).queryByText("12:10"))!
+    const cells = within(emptyRow).getAllByRole("cell")
+    expect(cells[0].textContent).toBe("Вторник")
+    expect(cells.slice(2).map((cell) => cell.textContent)).toEqual(["", "", ""])
+    await user.clear(input)
+    await user.type(input, "нет совпадений")
+    expect(screen.getAllByRole("row")).toHaveLength(4)
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    expect(screen.getByRole("status").textContent).toBe("Предметы по запросу не найдены.")
+    expect(screen.getAllByRole("row")).toHaveLength(2)
+  })
+
   it("renders loading and error states inside the table and retries", async () => {
     const user = userEvent.setup()
     vi.mocked(fetch).mockRejectedValueOnce(new Error("Сервер недоступен"))

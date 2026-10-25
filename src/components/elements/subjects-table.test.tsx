@@ -16,6 +16,8 @@ it("shows grouped lessons, missing fields and safe online links without inventin
   }
   render(
     <SubjectsTable
+      query=""
+      onQueryChange={() => {}}
       lessons={[
         base,
         { ...base, group: "А-2" },
@@ -43,12 +45,58 @@ it("shows grouped lessons, missing fields and safe online links without inventin
 it("handles loading, failures with retry, and empty results within the table", async () => {
   const onRetry = vi.fn(async () => {})
   const props = { lessons: [], loading: true, error: null, onRetry }
-  const view = render(<SubjectsTable {...props} />)
+  const view = render(<SubjectsTable query="" onQueryChange={() => {}} {...props} />)
   expect(screen.getByRole("status").closest("table")).toBeTruthy()
-  view.rerender(<SubjectsTable {...props} loading={false} error="Нет связи" />)
+  view.rerender(
+    <SubjectsTable
+      query=""
+      onQueryChange={() => {}}
+      {...props}
+      loading={false}
+      error="Нет связи"
+    />,
+  )
   expect(screen.getByRole("alert").textContent).toContain("Нет связи")
   await userEvent.setup().click(screen.getByRole("button", { name: "Попробовать снова" }))
   expect(onRetry).toHaveBeenCalledOnce()
-  view.rerender(<SubjectsTable {...props} loading={false} />)
+  view.rerender(<SubjectsTable query="" onQueryChange={() => {}} {...props} loading={false} />)
   expect(screen.getByText("В расписании нет предметов.").closest("table")).toBeTruthy()
+})
+
+it("merges day and time cells within each day and recalculates spans after search", () => {
+  const base = {
+    weekday: "ПОНЕДЕЛЬНИК",
+    time: "8.40-10.10",
+    classroom: "М-101",
+    lesson: "Алгебра",
+    group: "А-1",
+  }
+  const lessons = [
+    base,
+    { ...base, lesson: "Физика", time: "08:40–10:10" },
+    { ...base, time: "10.20-11.50" },
+    { ...base, weekday: "ВТОРНИК" },
+  ]
+  const props = {
+    lessons,
+    loading: false,
+    error: null,
+    onRetry: async () => {},
+    onQueryChange: () => {},
+  }
+  const view = render(<SubjectsTable {...props} query="" />)
+  expect(screen.getByText("Понедельник").getAttribute("rowspan")).toBe("3")
+  expect(screen.getByText("Вторник").getAttribute("rowspan")).toBe("1")
+  const mondayTime = screen.getAllByText("08:40")[0].closest("td")!
+  expect(mondayTime.getAttribute("rowspan")).toBe("2")
+  const rows = screen.getAllByRole("row").slice(1)
+  expect(within(rows[1]).getAllByRole("cell")).toHaveLength(3)
+  expect(within(rows[2]).getAllByRole("cell")).toHaveLength(4)
+  view.rerender(<SubjectsTable {...props} query="Физика" />)
+  expect(screen.getByText("Понедельник").getAttribute("rowspan")).toBe("1")
+  expect(screen.getByText("08:40").closest("td")!.getAttribute("rowspan")).toBe("1")
+  expect(screen.queryByText("Вторник")).toBeNull()
+  view.rerender(<SubjectsTable {...props} query="Физика" showEmptyRows />)
+  expect(screen.getByText("Понедельник").getAttribute("rowspan")).toBe("2")
+  expect(screen.getByText("Вторник")).toBeTruthy()
 })

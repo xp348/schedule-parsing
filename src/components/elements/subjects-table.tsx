@@ -1,4 +1,6 @@
 import { useMemo } from "react"
+import { BroomIcon } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -10,20 +12,71 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { DAYS, DAY_LABELS, formatTime, parseTime, type Lesson } from "@/lib/schedule"
-import { createSubjectsTable } from "@/lib/subjects"
+import { createSubjectsTable, addEmptySubjectSlots, getSubjectRowSpans } from "@/lib/subjects"
 
 interface SubjectsTableProps {
+  showEmptyRows?: boolean
+  query: string
+  onQueryChange: (query: string) => void
   lessons: Lesson[]
   loading: boolean
   error: string | null
   onRetry: () => Promise<void>
 }
 
-export function SubjectsTable({ lessons, loading, error, onRetry }: SubjectsTableProps) {
-  const rows = useMemo(() => createSubjectsTable(lessons), [lessons])
+function normalizeSubject(value: string) {
+  return value
+    .normalize("NFKC")
+    .toLocaleLowerCase("ru")
+    .replace(/ё/g, "е")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+export function SubjectsTable({
+  showEmptyRows = false,
+  lessons,
+  loading,
+  error,
+  onRetry,
+  query,
+  onQueryChange,
+}: SubjectsTableProps) {
+  const allRows = useMemo(() => createSubjectsTable(lessons), [lessons])
+  const rows = useMemo(() => {
+    const normalized = normalizeSubject(query)
+    const matches = normalized
+      ? allRows.filter((row) => normalizeSubject(row.subject).includes(normalized))
+      : allRows
+    return showEmptyRows ? addEmptySubjectSlots(lessons, matches) : matches
+  }, [allRows, query, showEmptyRows, lessons])
+
+  const rowSpans = useMemo(() => getSubjectRowSpans(rows), [rows])
 
   return (
     <>
+      <div className="relative my-4 w-[27.5rem] max-w-full">
+        <Input
+          type="search"
+          aria-label="Поиск по предмету"
+          placeholder="Найти предмет…"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          className="pr-11 [&::-webkit-search-cancel-button]:appearance-none"
+        />
+        {query && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="absolute top-1/2 right-1 -translate-y-1/2"
+            aria-label="Очистить поиск по предмету"
+            onClick={() => onQueryChange("")}
+          >
+            <BroomIcon />
+          </Button>
+        )}
+      </div>
       <p className="mb-4 text-sm text-muted-foreground">
         В исходном расписании указаны дни недели, без календарных дат.
       </p>
@@ -61,35 +114,47 @@ export function SubjectsTable({ lessons, loading, error, onRetry }: SubjectsTabl
             </TableRow>
           ) : rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5}>В расписании нет предметов.</TableCell>
+              <TableCell colSpan={5}>
+                <span role="status">
+                  {allRows.length && normalizeSubject(query)
+                    ? "Предметы по запросу не найдены."
+                    : "В расписании нет предметов."}
+                </span>
+              </TableCell>
             </TableRow>
           ) : (
-            rows.map((row) => {
+            rows.map((row, index) => {
               const interval = parseTime(row.time)
               const dayIndex = DAYS.findIndex((day) => day === row.weekday)
               return (
                 <TableRow key={row.id}>
-                  <TableCell className="align-top">
-                    {dayIndex >= 0 ? DAY_LABELS[dayIndex] : row.weekday || "Дата не указана"}
-                  </TableCell>
-                  <TableCell className="align-top tabular-nums">
-                    {interval ? (
-                      <>
-                        <time dateTime={formatTime(interval.start)}>
-                          {formatTime(interval.start)}
-                        </time>
-                        {" – "}
-                        <time dateTime={formatTime(interval.end)}>{formatTime(interval.end)}</time>
-                      </>
-                    ) : (
-                      row.time || "Время не указано"
-                    )}
-                  </TableCell>
+                  {rowSpans[index].day > 0 && (
+                    <TableCell rowSpan={rowSpans[index].day} className="align-top">
+                      {dayIndex >= 0 ? DAY_LABELS[dayIndex] : row.weekday || "Дата не указана"}
+                    </TableCell>
+                  )}
+                  {rowSpans[index].time > 0 && (
+                    <TableCell rowSpan={rowSpans[index].time} className="align-top tabular-nums">
+                      {interval ? (
+                        <>
+                          <time dateTime={formatTime(interval.start)}>
+                            {formatTime(interval.start)}
+                          </time>
+                          {" – "}
+                          <time dateTime={formatTime(interval.end)}>
+                            {formatTime(interval.end)}
+                          </time>
+                        </>
+                      ) : (
+                        row.time || "Время не указано"
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell className="min-w-64 align-top whitespace-normal wrap-anywhere">
                     {row.subject}
                   </TableCell>
                   <TableCell className="min-w-40 align-top whitespace-normal">
-                    {row.groups.length ? (
+                    {row.isPlaceholder ? null : row.groups.length ? (
                       <ul className="flex flex-wrap gap-2" aria-label="Группы занятия">
                         {row.groups.map((group) => (
                           <li key={group}>{group}</li>
@@ -100,7 +165,8 @@ export function SubjectsTable({ lessons, loading, error, onRetry }: SubjectsTabl
                     )}
                   </TableCell>
                   <TableCell className="align-top">
-                    {row.classroom && /^https?:\/\//i.test(row.classroom) ? (
+                    {row.isPlaceholder ? null : row.classroom &&
+                      /^https?:\/\//i.test(row.classroom) ? (
                       <a
                         href={row.classroom}
                         target="_blank"

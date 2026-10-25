@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { EmptyRowsToggle } from "@/components/elements/empty-rows-toggle"
 import { INITIAL_GROUPING_SEARCH } from "@/lib/grouping"
 import { GroupingTable } from "@/components/elements/grouping-table"
 import { SubjectsTable } from "@/components/elements/subjects-table"
@@ -15,6 +16,12 @@ const sections = [
 ] as const
 
 export function ScheduleTabs() {
+  const [showEmptyRows, setShowEmptyRows] = useState({
+    groups: false,
+    subjects: false,
+    rooms: false,
+  })
+  const [subjectQuery, setSubjectQuery] = useState("")
   const [roomMode, setRoomMode] = useState<RoomAvailabilityMode>("free")
   const [groupingSearch, setGroupingSearch] = useState(INITIAL_GROUPING_SEARCH)
   const [excludedValues, setExcludedValues] = useState<string[][]>([[], [], [], []])
@@ -31,7 +38,14 @@ export function ScheduleTabs() {
         ))}
       </TabsList>
       <TabsContent value="groups" className="m-0 min-w-0">
+        <EmptyRowsToggle
+          checked={showEmptyRows.groups}
+          onCheckedChange={(checked) =>
+            setShowEmptyRows((previous) => ({ ...previous, groups: checked }))
+          }
+        />
         <GroupingTable
+          showEmptyRows={showEmptyRows.groups}
           lessons={lessons}
           loading={loading}
           error={error}
@@ -49,10 +63,31 @@ export function ScheduleTabs() {
         />
       </TabsContent>
       <TabsContent value="subjects" className="m-0 min-w-0">
-        <SubjectsTable lessons={lessons} loading={loading} error={error} onRetry={reload} />
+        <EmptyRowsToggle
+          checked={showEmptyRows.subjects}
+          onCheckedChange={(checked) =>
+            setShowEmptyRows((previous) => ({ ...previous, subjects: checked }))
+          }
+        />
+        <SubjectsTable
+          showEmptyRows={showEmptyRows.subjects}
+          lessons={lessons}
+          loading={loading}
+          error={error}
+          onRetry={reload}
+          query={subjectQuery}
+          onQueryChange={setSubjectQuery}
+        />
       </TabsContent>
       <TabsContent value="rooms" className="m-0 min-w-0">
+        <EmptyRowsToggle
+          checked={showEmptyRows.rooms}
+          onCheckedChange={(checked) =>
+            setShowEmptyRows((previous) => ({ ...previous, rooms: checked }))
+          }
+        />
         <Rooms
+          showEmptyRows={showEmptyRows.rooms}
           mode={roomMode}
           onModeChange={setRoomMode}
           lessons={lessons}

@@ -24,6 +24,7 @@ import {
 import { DAYS, DAY_LABELS, formatTime, type Lesson } from "@/lib/schedule"
 
 interface GroupingTableProps {
+  showEmptyRows?: boolean
   lessons: Lesson[]
   loading: boolean
   error: string | null
@@ -35,6 +36,7 @@ interface GroupingTableProps {
 }
 
 export function GroupingTable({
+  showEmptyRows = false,
   lessons,
   loading,
   error,
@@ -47,8 +49,9 @@ export function GroupingTable({
   const all = useMemo(() => createGroupingTable(lessons), [lessons])
   const options = useMemo(() => getGroupingFilterOptions(all.columns), [all.columns])
   const columns = useMemo(
-    () => searchGroupColumns(filterGroupColumns(all.columns, excludedValues), search),
-    [all.columns, excludedValues, search],
+    () =>
+      searchGroupColumns(filterGroupColumns(all.columns, excludedValues), search, showEmptyRows),
+    [all.columns, excludedValues, search, showEmptyRows],
   )
   const headers = useMemo(() => createGroupingHeaders(columns), [columns])
   const groups = useMemo(
@@ -60,7 +63,7 @@ export function GroupingTable({
   )
   const days = useMemo(
     () =>
-      search.cellQuery.trim()
+      !showEmptyRows
         ? all.days
             .map(({ day, intervals }) => ({
               day,
@@ -72,8 +75,10 @@ export function GroupingTable({
             }))
             .filter(({ intervals }) => intervals.length > 0)
         : all.days,
-    [all.days, columns, search.cellQuery],
+    [all.days, columns, showEmptyRows],
   )
+
+  const headerRows = columns.length ? headers : [[]]
 
   if (loading && !lessons.length)
     return (
@@ -105,7 +110,7 @@ export function GroupingTable({
         excludedValues={excludedValues}
         onChange={onExcludedChange}
       />
-      {columns.length === 0 ? (
+      {columns.length === 0 && !showEmptyRows ? (
         <p role="status" className="py-4 text-sm text-muted-foreground">
           {search.cellQuery.trim()
             ? "Занятия по запросу не найдены с учётом выбранных фильтров."
@@ -118,14 +123,14 @@ export function GroupingTable({
             курс, группа.
           </TableCaption>
           <TableHeader>
-            {headers.map((row, level) => (
+            {headerRows.map((row, level) => (
               <TableRow key={GROUPING_LEVELS[level]}>
                 {level === 0 && (
                   <>
-                    <TableHead scope="col" rowSpan={GROUPING_LEVELS.length} className="border-r">
+                    <TableHead scope="col" rowSpan={headerRows.length} className="border-r">
                       День
                     </TableHead>
-                    <TableHead scope="col" rowSpan={GROUPING_LEVELS.length} className="border-r">
+                    <TableHead scope="col" rowSpan={headerRows.length} className="border-r">
                       Время
                     </TableHead>
                   </>
@@ -190,7 +195,9 @@ export function GroupingTable({
             <TableBody>
               <TableRow>
                 <TableCell colSpan={columns.length + 2}>
-                  В расписании нет распознанных интервалов времени.
+                  {all.days.length
+                    ? "Нет занятий, соответствующих выбранным фильтрам."
+                    : "В расписании нет распознанных интервалов времени."}
                 </TableCell>
               </TableRow>
             </TableBody>

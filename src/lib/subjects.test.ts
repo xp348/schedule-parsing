@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { createSubjectsTable } from "./subjects"
+import { createSubjectsTable, addEmptySubjectSlots } from "./subjects"
 import type { Lesson } from "./schedule"
 
 const lesson = (overrides: Partial<Lesson> = {}): Lesson => ({
@@ -50,4 +50,24 @@ it("keeps lessons without time or classroom, orders them after known times, and 
   expect(rows.map((row) => row.time)).toEqual(["8.40-10.10", "12.10-13.40", null])
   expect(rows[2].classroom).toBeNull()
   expect(createSubjectsTable([])).toEqual([])
+})
+
+it("adds one empty row per missing source slot, including aliases and times without subjects", () => {
+  const source = [
+    lesson(),
+    lesson({ time: "08:40–10:10" }),
+    lesson({ weekday: "ВТОРНИК", time: "10.20-11.50", lesson: "н." }),
+    lesson({ time: null }),
+  ]
+  const matches = createSubjectsTable(source).filter((row) => row.time !== null)
+  const displayed = addEmptySubjectSlots(source, matches)
+  expect(displayed).toHaveLength(3)
+  expect(displayed.filter((row) => row.isPlaceholder)).toHaveLength(2)
+  expect(displayed.find((row) => row.weekday === "ВТОРНИК")).toMatchObject({
+    subject: "",
+    groups: [],
+    classroom: null,
+    isPlaceholder: true,
+  })
+  expect(matches).toHaveLength(1)
 })
