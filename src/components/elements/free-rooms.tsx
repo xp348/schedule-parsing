@@ -28,6 +28,9 @@ export function FreeRooms({
 
   return (
     <>
+      <p className="text-sm text-muted-foreground">
+        Чётность недели не учитывается: занятия чётных и нечётных недель объединены.
+      </p>
       <RoomSearch
         rooms={rooms}
         selectedRooms={selectedRooms}

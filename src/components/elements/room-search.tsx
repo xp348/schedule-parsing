@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react"
-import { XIcon } from "lucide-react"
+import { BroomIcon, XIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,15 +45,15 @@ export function RoomSearch({
 
   return (
     <div
-      className="relative my-4 w-full max-w-sm"
+      className="relative my-4 w-[27.5rem] max-w-full"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
       }}
     >
       <div className="flex flex-wrap items-center gap-2">
         {selectedRooms.map((room) => (
-          <Badge key={room} variant="secondary">
-            <span>{room}</span>
+          <Badge key={room} variant="secondary" className="w-26 min-w-0">
+            <span className="truncate">{room}</span>
             <Button
               type="button"
               variant="ghost"
@@ -70,8 +70,10 @@ export function RoomSearch({
             </Button>
           </Badge>
         ))}
+      </div>
+      <div className="relative mt-2 w-full">
         <Input
-          className="min-w-20 flex-1"
+          className="pr-11"
           ref={input}
           type="text"
           role="combobox"
@@ -122,9 +124,11 @@ export function RoomSearch({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
+            size="icon-sm"
+            className="absolute top-1/2 right-1 -translate-y-1/2"
             disabled={disabled}
             aria-label="Очистить поиск"
+            title="Очистить все аудитории"
             onClick={() => {
               onQueryChange("")
               onChange([])
@@ -133,7 +137,7 @@ export function RoomSearch({
               input.current?.focus()
             }}
           >
-            <XIcon />
+            <BroomIcon />
           </Button>
         )}
       </div>
