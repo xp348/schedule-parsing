@@ -1,4 +1,8 @@
 import { useId, useRef, useState } from "react"
+import { XIcon } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface RoomSearchProps {
   rooms: string[]
@@ -41,17 +45,19 @@ export function RoomSearch({
 
   return (
     <div
-      className="room-search"
+      className="relative my-4 w-full max-w-sm"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
       }}
     >
-      <div className="room-search-field">
+      <div className="flex flex-wrap items-center gap-2">
         {selectedRooms.map((room) => (
-          <span key={room} className="room-search-tag">
+          <Badge key={room} variant="secondary">
             <span>{room}</span>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               aria-label={`Убрать аудиторию ${room}`}
               disabled={disabled}
               onClick={() => {
@@ -60,11 +66,12 @@ export function RoomSearch({
                 input.current?.focus()
               }}
             >
-              ×
-            </button>
-          </span>
+              <XIcon />
+            </Button>
+          </Badge>
         ))}
-        <input
+        <Input
+          className="min-w-20 flex-1"
           ref={input}
           type="text"
           role="combobox"
@@ -112,9 +119,11 @@ export function RoomSearch({
           }}
         />
         {(query || selectedRooms.length > 0) && (
-          <button
+          <Button
             type="button"
-            className="room-search-clear"
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
             aria-label="Очистить поиск"
             onClick={() => {
               onQueryChange("")
@@ -124,15 +133,16 @@ export function RoomSearch({
               input.current?.focus()
             }}
           >
-            ×
-          </button>
+            <XIcon />
+          </Button>
         )}
       </div>
       {expanded && (
-        <div className="room-suggestions">
-          <ul id={listId} role="listbox" aria-label="Аудитории">
+        <div className="absolute top-full z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md">
+          <ul className="m-0 list-none p-1" id={listId} role="listbox" aria-label="Аудитории">
             {suggestions.map((room, index) => (
               <li
+                className="cursor-pointer rounded-sm px-2 py-1.5 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground"
                 key={room}
                 id={`${listId}-${index}`}
                 role="option"
@@ -146,7 +156,7 @@ export function RoomSearch({
             ))}
           </ul>
           {suggestions.length === 0 && (
-            <p role="status">
+            <p role="status" className="p-2 text-sm text-muted-foreground">
               {rooms.length > 0 && rooms.every((room) => selectedRooms.includes(room))
                 ? "Все аудитории выбраны"
                 : "Аудитории не найдены"}

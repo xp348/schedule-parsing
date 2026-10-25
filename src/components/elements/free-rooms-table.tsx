@@ -1,4 +1,13 @@
 import { useMemo } from "react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCaption,
+} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { createAvailabilityTable, DAY_LABELS, DAYS, formatTime, type Lesson } from "@/lib/schedule"
 
@@ -36,37 +45,37 @@ export function FreeRoomsTable({
   }, [allDays, selectedRooms])
 
   return (
-    <table className="availability-table">
-      <caption className="sr-only">
+    <Table className="table-fixed">
+      <TableCaption className="sr-only">
         Свободные аудитории по дням и времени. Учитываются обе недели и только аудитории,
         встречающиеся в расписании. Время по Красноярску. Доступность зависит от полноты исходных
         данных.
-      </caption>
+      </TableCaption>
       <colgroup>
-        <col className="day-column" />
-        <col className="time-column" />
+        <col className="w-11 sm:w-40" />
+        <col className="w-[76px] sm:w-[148px]" />
         <col />
       </colgroup>
-      <thead>
-        <tr>
-          <th scope="col">День</th>
-          <th scope="col">Время</th>
-          <th scope="col">Аудитории</th>
-        </tr>
-      </thead>
+      <TableHeader>
+        <TableRow>
+          <TableHead scope="col">День</TableHead>
+          <TableHead scope="col">Время</TableHead>
+          <TableHead scope="col">Аудитории</TableHead>
+        </TableRow>
+      </TableHeader>
 
       {loading && lessons.length === 0 ? (
-        <tbody>
-          <tr>
-            <td colSpan={3} className="table-message">
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={3} className="whitespace-normal">
               <span role="status">Загрузка расписания…</span>
-            </td>
-          </tr>
-        </tbody>
+            </TableCell>
+          </TableRow>
+        </TableBody>
       ) : error ? (
-        <tbody>
-          <tr>
-            <td colSpan={3} className="table-message">
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={3} className="whitespace-normal">
               <div role="alert">
                 <p>Не удалось загрузить расписание.</p>
                 <p className="mt-1 text-xs text-muted-foreground">{error}</p>
@@ -74,68 +83,68 @@ export function FreeRoomsTable({
               <Button variant="outline" size="sm" className="mt-4" onClick={() => void onRetry()}>
                 Попробовать снова
               </Button>
-            </td>
-          </tr>
-        </tbody>
+            </TableCell>
+          </TableRow>
+        </TableBody>
       ) : days.length === 0 ? (
-        <tbody>
-          <tr>
-            <td colSpan={3} className="table-message">
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={3} className="whitespace-normal">
               {selectedRooms?.length
                 ? "Для выбранных аудиторий свободных интервалов не найдено."
                 : "В расписании нет распознанных интервалов времени."}
-            </td>
-          </tr>
-        </tbody>
+            </TableCell>
+          </TableRow>
+        </TableBody>
       ) : (
         days.map(({ day, intervals }) => {
           const dayIndex = DAYS.indexOf(day)
           return (
-            <tbody key={day} aria-label={DAY_LABELS[dayIndex]}>
+            <TableBody key={day} aria-label={DAY_LABELS[dayIndex]}>
               {intervals.map(({ start, end, rooms }, index) => (
-                <tr key={`${start}-${end}`}>
+                <TableRow key={`${start}-${end}`}>
                   {index === 0 && (
-                    <th
+                    <TableHead
                       scope="rowgroup"
                       rowSpan={intervals.length}
-                      className="weekday-cell"
+                      className="align-top"
                       aria-label={DAY_LABELS[dayIndex]}
                     >
-                      <span className="weekday-label">
-                        <span className="full-day">{DAY_LABELS[dayIndex]}</span>
-                        <abbr className="short-day" title={DAY_LABELS[dayIndex]}>
+                      <span>
+                        <span className="hidden sm:inline">{DAY_LABELS[dayIndex]}</span>
+                        <abbr className="no-underline sm:hidden" title={DAY_LABELS[dayIndex]}>
                           {SHORT_DAYS[dayIndex]}
                         </abbr>
                       </span>
-                    </th>
+                    </TableHead>
                   )}
-                  <td className="time-cell">
-                    <span className="time-range">
+                  <TableCell className="align-top tabular-nums">
+                    <span className="inline-flex flex-col flex-wrap gap-px leading-normal sm:flex-row sm:gap-1">
                       <time dateTime={formatTime(start)}>{formatTime(start)}</time>
-                      <span className="time-separator" aria-hidden="true">
+                      <span className="hidden sm:inline" aria-hidden="true">
                         –
                       </span>
                       <span className="sr-only"> до </span>
                       <time dateTime={formatTime(end)}>{formatTime(end)}</time>
                     </span>
-                  </td>
-                  <td className="rooms-cell">
+                  </TableCell>
+                  <TableCell className="align-top whitespace-normal">
                     {rooms.length > 0 ? (
-                      <ul className="room-list" aria-label="Свободные аудитории">
+                      <ul className="flex flex-wrap gap-2" aria-label="Свободные аудитории">
                         {rooms.map((room) => (
                           <li key={room}>{room}</li>
                         ))}
                       </ul>
                     ) : (
-                      <span className="no-rooms">Нет свободных аудиторий</span>
+                      <span className="text-muted-foreground">Нет свободных аудиторий</span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
+            </TableBody>
           )
         })
       )}
-    </table>
+    </Table>
   )
 }
