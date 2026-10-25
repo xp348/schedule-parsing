@@ -456,6 +456,75 @@ describe("minimal timetable interface", () => {
     expect(screen.getAllByRole("row")).toHaveLength(2)
   })
 
+  it("restores all tabs' inputs and switches after reopening the page", async () => {
+    const user = userEvent.setup()
+    const firstVisit = render(<App />)
+    await screen.findByText("М-102")
+    await user.click(screen.getByRole("radio", { name: "Занятые" }))
+    await user.type(screen.getByRole("combobox", { name: "Аудитория" }), "101")
+    await user.click(screen.getByRole("option", { name: "М-101" }))
+    await user.type(screen.getByRole("combobox", { name: "Аудитория" }), "102")
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    await user.type(screen.getByRole("combobox", { name: "Группы" }), "ИС-26")
+    await user.click(screen.getByRole("option", { name: "ИС-26" }))
+    await user.type(screen.getByRole("combobox", { name: "Группы" }), "ИЭ")
+    await user.click(screen.getByRole("switch", { name: "Исключать выбранные группы" }))
+    await user.type(screen.getByRole("searchbox", { name: "Поиск по ячейкам" }), "Программирование")
+    for (const name of ["Факультет", "Уровень обучения", "Форма обучения", "Курс"]) {
+      await user.click(within(screen.getByRole("toolbar", { name })).getByRole("button"))
+    }
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.type(screen.getByRole("searchbox", { name: "Поиск по предмету" }), "Матем")
+    await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
+    firstVisit.unmount()
+    render(<App />)
+    expect(screen.getByRole("tab", { name: "Предметы" }).getAttribute("aria-selected")).toBe("true")
+    expect(
+      (screen.getByRole("searchbox", { name: "Поиск по предмету" }) as HTMLInputElement).value,
+    ).toBe("Матем")
+    expect(
+      screen
+        .getByRole("switch", { name: "Показывать пустые дни и время" })
+        .getAttribute("aria-checked"),
+    ).toBe("true")
+    await user.click(screen.getByRole("tab", { name: "Группы" }))
+    await screen.findByRole("button", { name: "Убрать группу ИС-26" })
+    expect((screen.getByRole("combobox", { name: "Группы" }) as HTMLInputElement).value).toBe("ИЭ")
+    expect(
+      (screen.getByRole("searchbox", { name: "Поиск по ячейкам" }) as HTMLInputElement).value,
+    ).toBe("Программирование")
+    expect(
+      screen
+        .getByRole("switch", { name: "Исключать выбранные группы" })
+        .getAttribute("aria-checked"),
+    ).toBe("true")
+    expect(
+      screen
+        .getByRole("switch", { name: "Показывать пустые дни и время" })
+        .getAttribute("aria-checked"),
+    ).toBe("true")
+    for (const name of ["Факультет", "Уровень обучения", "Форма обучения", "Курс"]) {
+      expect(
+        within(screen.getByRole("toolbar", { name }))
+          .getByRole("button")
+          .getAttribute("aria-pressed"),
+      ).toBe("false")
+    }
+    await user.click(screen.getByRole("tab", { name: "Аудитории" }))
+    expect(screen.getByRole("radio", { name: "Занятые" }).getAttribute("aria-checked")).toBe("true")
+    expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
+    expect((screen.getByRole("combobox", { name: "Аудитория" }) as HTMLInputElement).value).toBe(
+      "102",
+    )
+    expect(
+      screen
+        .getByRole("switch", { name: "Показывать пустые дни и время" })
+        .getAttribute("aria-checked"),
+    ).toBe("true")
+  })
+
   it("renders loading and error states inside the table and retries", async () => {
     const user = userEvent.setup()
     vi.mocked(fetch).mockRejectedValueOnce(new Error("Сервер недоступен"))

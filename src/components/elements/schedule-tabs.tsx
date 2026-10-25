@@ -1,13 +1,11 @@
-import { useState } from "react"
 import { EmptyRowsToggle } from "@/components/elements/empty-rows-toggle"
-import { INITIAL_GROUPING_SEARCH } from "@/lib/grouping"
 import { GroupingTable } from "@/components/elements/grouping-table"
 import { SubjectsTable } from "@/components/elements/subjects-table"
 import { Rooms } from "@/components/elements/rooms"
-import type { RoomAvailabilityMode } from "@/lib/schedule"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useRoomSearch } from "@/hooks/use-room-search"
+import { useSchedulePreferences } from "@/hooks/use-schedule-preferences"
 
 const sections = [
   { value: "groups", label: "Группы" },
@@ -16,20 +14,20 @@ const sections = [
 ] as const
 
 export function ScheduleTabs() {
-  const [showEmptyRows, setShowEmptyRows] = useState({
-    groups: false,
-    subjects: false,
-    rooms: false,
-  })
-  const [subjectQuery, setSubjectQuery] = useState("")
-  const [roomMode, setRoomMode] = useState<RoomAvailabilityMode>("free")
-  const [groupingSearch, setGroupingSearch] = useState(INITIAL_GROUPING_SEARCH)
-  const [excludedValues, setExcludedValues] = useState<string[][]>([[], [], [], []])
+  const { preferences, updatePreference } = useSchedulePreferences()
+  const { activeTab, showEmptyRows, subjectQuery, roomMode, groupingSearch, excludedValues } =
+    preferences
   const { lessons, loading, error, reload } = useSchedule()
   const { selectedRooms, query, setSelectedRooms, setQuery } = useRoomSearch()
 
   return (
-    <Tabs defaultValue="rooms">
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => {
+        if (value === "groups" || value === "subjects" || value === "rooms")
+          updatePreference("activeTab", value)
+      }}
+    >
       <TabsList aria-label="Разделы расписания">
         {sections.map(({ value, label }) => (
           <TabsTrigger key={value} value={value}>
@@ -41,7 +39,7 @@ export function ScheduleTabs() {
         <EmptyRowsToggle
           checked={showEmptyRows.groups}
           onCheckedChange={(checked) =>
-            setShowEmptyRows((previous) => ({ ...previous, groups: checked }))
+            updatePreference("showEmptyRows", (previous) => ({ ...previous, groups: checked }))
           }
         />
         <GroupingTable
@@ -52,11 +50,11 @@ export function ScheduleTabs() {
           onRetry={reload}
           search={groupingSearch}
           onSearchChange={(updates) =>
-            setGroupingSearch((previous) => ({ ...previous, ...updates }))
+            updatePreference("groupingSearch", (previous) => ({ ...previous, ...updates }))
           }
           excludedValues={excludedValues}
           onExcludedChange={(level, excluded) =>
-            setExcludedValues((previous) =>
+            updatePreference("excludedValues", (previous) =>
               previous.map((values, index) => (index === level ? excluded : values)),
             )
           }
@@ -66,7 +64,7 @@ export function ScheduleTabs() {
         <EmptyRowsToggle
           checked={showEmptyRows.subjects}
           onCheckedChange={(checked) =>
-            setShowEmptyRows((previous) => ({ ...previous, subjects: checked }))
+            updatePreference("showEmptyRows", (previous) => ({ ...previous, subjects: checked }))
           }
         />
         <SubjectsTable
@@ -76,20 +74,20 @@ export function ScheduleTabs() {
           error={error}
           onRetry={reload}
           query={subjectQuery}
-          onQueryChange={setSubjectQuery}
+          onQueryChange={(value) => updatePreference("subjectQuery", value)}
         />
       </TabsContent>
       <TabsContent value="rooms" className="m-0 min-w-0">
         <EmptyRowsToggle
           checked={showEmptyRows.rooms}
           onCheckedChange={(checked) =>
-            setShowEmptyRows((previous) => ({ ...previous, rooms: checked }))
+            updatePreference("showEmptyRows", (previous) => ({ ...previous, rooms: checked }))
           }
         />
         <Rooms
           showEmptyRows={showEmptyRows.rooms}
           mode={roomMode}
-          onModeChange={setRoomMode}
+          onModeChange={(value) => updatePreference("roomMode", value)}
           lessons={lessons}
           loading={loading}
           error={error}
