@@ -42,7 +42,7 @@ jobs:
           git fetch origin refs/heads/data:refs/remotes/origin/data
           npm run prepare:data
 
-      - name: Проверить расчёт свободных аудиторий
+      - name: Проверить фронтенд
         run: npm test
 
       - name: Собрать сайт

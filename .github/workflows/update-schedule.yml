@@ -1,6 +1,10 @@
 name: Обновление расписания
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update-schedule.yml
   schedule:
     # UTC: 02:30–10:30 и 03:00–11:00 = 09:30–18:00 по Красноярску.
     - cron: "30 2-10 * * 1-5"
@@ -19,10 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Получить код из основной ветки
+      - name: Получить парсер из ветки schedule
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: schedule
 
       - name: Установить Python
         uses: actions/setup-python@v7
@@ -33,6 +37,9 @@ jobs:
         run: |
           python -m pip install uv
           uv sync --frozen
+
+      - name: Проверить парсер
+        run: uv run --frozen python -m unittest discover -s tests -v
 
       - name: Получить расписание и сохранить журнал
         run: uv run --frozen python export_schedule.py

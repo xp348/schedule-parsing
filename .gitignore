@@ -2,3 +2,7 @@
 __pycache__/
 /output/
 /logs/
+/dist/
+/node_modules/
+/public/
+*.tsbuildinfo
