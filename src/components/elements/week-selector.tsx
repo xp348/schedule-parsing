@@ -10,6 +10,7 @@ export function WeekSelector({ value, onChange }: WeekSelectorProps) {
   return (
     <div className="my-4 space-y-2">
       <ToggleGroup
+        className="max-w-full flex-wrap"
         type="single"
         variant="outline"
         value={value}

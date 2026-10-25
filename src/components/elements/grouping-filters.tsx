@@ -47,7 +47,11 @@ export function GroupingFilters({
             }
           >
             {values.map((value) => (
-              <ToggleGroupItem key={value} value={value}>
+              <ToggleGroupItem
+                key={value}
+                value={value}
+                className="h-auto min-h-8 max-w-full py-1.5 text-left whitespace-normal"
+              >
                 {value}
               </ToggleGroupItem>
             ))}

@@ -85,18 +85,18 @@ it("merges day and time cells within each day and recalculates spans after searc
     onQueryChange: () => {},
   }
   const view = render(<SubjectsTable {...props} query="" />)
-  expect(screen.getByText("Понедельник").getAttribute("rowspan")).toBe("3")
-  expect(screen.getByText("Вторник").getAttribute("rowspan")).toBe("1")
+  expect(screen.getByText("Понедельник").closest("td")!.getAttribute("rowspan")).toBe("3")
+  expect(screen.getByText("Вторник").closest("td")!.getAttribute("rowspan")).toBe("1")
   const mondayTime = screen.getAllByText("08:40")[0].closest("td")!
   expect(mondayTime.getAttribute("rowspan")).toBe("2")
   const rows = screen.getAllByRole("row").slice(1)
   expect(within(rows[1]).getAllByRole("cell")).toHaveLength(3)
   expect(within(rows[2]).getAllByRole("cell")).toHaveLength(4)
   view.rerender(<SubjectsTable {...props} query="Физика" />)
-  expect(screen.getByText("Понедельник").getAttribute("rowspan")).toBe("1")
+  expect(screen.getByText("Понедельник").closest("td")!.getAttribute("rowspan")).toBe("1")
   expect(screen.getByText("08:40").closest("td")!.getAttribute("rowspan")).toBe("1")
   expect(screen.queryByText("Вторник")).toBeNull()
   view.rerender(<SubjectsTable {...props} query="Физика" showEmptyRows />)
-  expect(screen.getByText("Понедельник").getAttribute("rowspan")).toBe("2")
+  expect(screen.getByText("Понедельник").closest("td")!.getAttribute("rowspan")).toBe("2")
   expect(screen.getByText("Вторник")).toBeTruthy()
 })

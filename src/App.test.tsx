@@ -446,7 +446,8 @@ describe("minimal timetable interface", () => {
     expect(screen.getAllByRole("row")).toHaveLength(4)
     const emptyRow = screen.getAllByRole("row").find((row) => within(row).queryByText("12:10"))!
     const cells = within(emptyRow).getAllByRole("cell")
-    expect(cells[0].textContent).toBe("Вторник")
+    expect(within(cells[0]).getByText("Вторник")).toBeTruthy()
+    expect(within(cells[0]).getByTitle("Вторник").textContent).toBe("Вт")
     expect(cells.slice(2).map((cell) => cell.textContent)).toEqual(["", "", ""])
     await user.clear(input)
     await user.type(input, "нет совпадений")

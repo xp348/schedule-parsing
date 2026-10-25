@@ -36,7 +36,7 @@ export function ScheduleTabs() {
           updatePreference("activeTab", value)
       }}
     >
-      <TabsList aria-label="Разделы расписания">
+      <TabsList aria-label="Разделы расписания" className="w-full sm:w-fit">
         {sections.map(({ value, label }) => (
           <TabsTrigger key={value} value={value}>
             {label}

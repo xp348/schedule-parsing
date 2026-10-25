@@ -1,5 +1,12 @@
 import { matchesWeek, type WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
+import {
+  ScheduleDay,
+  ScheduleTimeValue,
+  scheduleTableLayout,
+  pinnedDayCell,
+  pinnedTimeCell,
+} from "@/components/elements/schedule-table-cells"
 import { BroomIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DAYS, DAY_LABELS, formatTime, parseTime, type Lesson } from "@/lib/schedule"
+import { DAYS, DAY_LABELS, type Lesson } from "@/lib/schedule"
 import { createSubjectsTable, addEmptySubjectSlots, getSubjectRowSpans } from "@/lib/subjects"
 
 interface SubjectsTableProps {
@@ -85,14 +92,33 @@ export function SubjectsTable({
       <p className="mb-4 text-sm text-muted-foreground">
         В исходном расписании указаны дни недели, без календарных дат.
       </p>
-      <Table>
+      <Table
+        className={`${scheduleTableLayout} w-full table-fixed min-w-[calc(var(--schedule-frozen-width)+29rem)] sm:min-w-[calc(var(--schedule-frozen-width)+42rem)]`}
+      >
+        <colgroup>
+          <col className="w-(--schedule-day-width)" />
+          <col className="w-(--schedule-time-width)" />
+          <col />
+          <col className="w-32 sm:w-48" />
+          <col className="w-28 sm:w-40" />
+        </colgroup>
         <TableCaption className="sr-only">
           Предметы по дням и времени, с группами и аудиториями.
         </TableCaption>
         <TableHeader>
           <TableRow>
-            {["Дата", "Время", "Предмет", "Группы", "Аудитория"].map((label) => (
-              <TableHead key={label} scope="col">
+            {["Дата", "Время", "Предмет", "Группы", "Аудитория"].map((label, index) => (
+              <TableHead
+                key={label}
+                scope="col"
+                className={
+                  index === 0
+                    ? `${pinnedDayCell} z-30`
+                    : index === 1
+                      ? `${pinnedTimeCell} z-30`
+                      : undefined
+                }
+              >
                 {label}
               </TableHead>
             ))}
@@ -131,36 +157,29 @@ export function SubjectsTable({
             </TableRow>
           ) : (
             rows.map((row, index) => {
-              const interval = parseTime(row.time)
               const dayIndex = DAYS.findIndex((day) => day === row.weekday)
               return (
                 <TableRow key={row.id}>
                   {rowSpans[index].day > 0 && (
-                    <TableCell rowSpan={rowSpans[index].day} className="align-top">
-                      {dayIndex >= 0 ? DAY_LABELS[dayIndex] : row.weekday || "Дата не указана"}
+                    <TableCell
+                      rowSpan={rowSpans[index].day}
+                      className={pinnedDayCell}
+                      aria-label={
+                        dayIndex >= 0 ? DAY_LABELS[dayIndex] : row.weekday || "Дата не указана"
+                      }
+                    >
+                      <ScheduleDay weekday={row.weekday} />
                     </TableCell>
                   )}
                   {rowSpans[index].time > 0 && (
-                    <TableCell rowSpan={rowSpans[index].time} className="align-top tabular-nums">
-                      {interval ? (
-                        <>
-                          <time dateTime={formatTime(interval.start)}>
-                            {formatTime(interval.start)}
-                          </time>
-                          {" – "}
-                          <time dateTime={formatTime(interval.end)}>
-                            {formatTime(interval.end)}
-                          </time>
-                        </>
-                      ) : (
-                        row.time || "Время не указано"
-                      )}
+                    <TableCell rowSpan={rowSpans[index].time} className={pinnedTimeCell}>
+                      <ScheduleTimeValue value={row.time} />
                     </TableCell>
                   )}
-                  <TableCell className="min-w-64 align-top whitespace-normal wrap-anywhere">
+                  <TableCell className="align-top whitespace-normal wrap-anywhere">
                     {row.subject}
                   </TableCell>
-                  <TableCell className="min-w-40 align-top whitespace-normal">
+                  <TableCell className="align-top whitespace-normal wrap-anywhere">
                     {row.isPlaceholder ? null : row.groups.length ? (
                       <ul className="flex flex-wrap gap-2" aria-label="Группы занятия">
                         {row.groups.map((group) => (
@@ -171,7 +190,7 @@ export function SubjectsTable({
                       "Группы не указаны"
                     )}
                   </TableCell>
-                  <TableCell className="align-top">
+                  <TableCell className="align-top whitespace-normal wrap-anywhere">
                     {row.isPlaceholder ? null : row.classroom &&
                       /^https?:\/\//i.test(row.classroom) ? (
                       <a

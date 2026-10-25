@@ -1,5 +1,12 @@
 import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
+import {
+  ScheduleDay,
+  ScheduleTime,
+  scheduleTableLayout,
+  pinnedDayCell,
+  pinnedTimeCell,
+} from "@/components/elements/schedule-table-cells"
 import { GroupingFilters } from "@/components/elements/grouping-filters"
 import { GroupLesson } from "@/components/elements/group-lesson"
 import { Button } from "@/components/ui/button"
@@ -23,7 +30,7 @@ import {
   groupingSlotKey,
   GROUPING_LEVELS,
 } from "@/lib/grouping"
-import { DAYS, DAY_LABELS, formatTime, type Lesson } from "@/lib/schedule"
+import { DAYS, DAY_LABELS, type Lesson } from "@/lib/schedule"
 
 interface GroupingTableProps {
   week?: WeekSelection
@@ -125,7 +132,22 @@ export function GroupingTable({
             : "Нет групп, соответствующих выбранным фильтрам."}
         </p>
       ) : (
-        <Table>
+        <Table
+          className={`${scheduleTableLayout} table-fixed min-w-full`}
+          style={{
+            width: `calc(var(--schedule-frozen-width) + ${columns.length} * var(--schedule-group-width))`,
+          }}
+        >
+          <colgroup>
+            <col className="w-(--schedule-day-width)" />
+            <col className={columns.length ? "w-(--schedule-time-width)" : undefined} />
+            {columns.map(({ id }, index) => (
+              <col
+                key={id}
+                className={index === columns.length - 1 ? undefined : "w-(--schedule-group-width)"}
+              />
+            ))}
+          </colgroup>
           <TableCaption className="sr-only">
             Расписание по дням, времени и группам: факультет, уровень обучения, форма обучения,
             курс, группа.
@@ -135,10 +157,18 @@ export function GroupingTable({
               <TableRow key={GROUPING_LEVELS[level]}>
                 {level === 0 && (
                   <>
-                    <TableHead scope="col" rowSpan={headerRows.length} className="border-r">
+                    <TableHead
+                      scope="col"
+                      rowSpan={headerRows.length}
+                      className={`${pinnedDayCell} z-30`}
+                    >
                       День
                     </TableHead>
-                    <TableHead scope="col" rowSpan={headerRows.length} className="border-r">
+                    <TableHead
+                      scope="col"
+                      rowSpan={headerRows.length}
+                      className={`${pinnedTimeCell} z-30`}
+                    >
                       Время
                     </TableHead>
                   </>
@@ -148,10 +178,16 @@ export function GroupingTable({
                     key={id}
                     colSpan={span}
                     scope={level === GROUPING_LEVELS.length - 1 ? "col" : "colgroup"}
-                    className="min-w-28 border-r text-center"
+                    className="border-r px-0 text-left whitespace-normal sm:px-0"
                     aria-label={`${GROUPING_LEVELS[level]}: ${label}`}
                   >
-                    {label}
+                    <span
+                      data-grouping-label
+                      className="sticky left-(--schedule-frozen-width) inline-block w-max max-w-[min(100%,18rem,calc(100vw_-_var(--schedule-frozen-width)_-_2rem))] bg-background px-2 py-2 align-top whitespace-normal wrap-anywhere"
+                      title={label}
+                    >
+                      {label}
+                    </span>
                   </TableHead>
                 ))}
               </TableRow>
@@ -166,22 +202,21 @@ export function GroupingTable({
                       <TableHead
                         scope="rowgroup"
                         rowSpan={intervals.length}
-                        className="border-r align-top"
+                        className={pinnedDayCell}
+                        aria-label={DAY_LABELS[DAYS.indexOf(day)]}
                       >
-                        {DAY_LABELS[DAYS.indexOf(day)]}
+                        <ScheduleDay weekday={day} />
                       </TableHead>
                     )}
-                    <TableCell className="border-r align-top tabular-nums">
-                      <time dateTime={formatTime(start)}>{formatTime(start)}</time>
-                      {" – "}
-                      <time dateTime={formatTime(end)}>{formatTime(end)}</time>
+                    <TableCell className={pinnedTimeCell}>
+                      <ScheduleTime start={start} end={end} />
                     </TableCell>
                     {columns.map(({ id, lessonsBySlot }) => {
                       const entries = lessonsBySlot.get(groupingSlotKey(day, start, end)) ?? []
                       return (
                         <TableCell
                           key={id}
-                          className="w-64 min-w-64 max-w-64 border-r align-top whitespace-normal wrap-anywhere"
+                          className="border-r align-top whitespace-normal wrap-anywhere"
                         >
                           {entries.length > 0 && (
                             <ul className="space-y-3" aria-label="Занятия группы">

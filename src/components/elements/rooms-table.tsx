@@ -1,6 +1,13 @@
 import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import {
+  ScheduleDay,
+  ScheduleTime,
+  scheduleTableLayout,
+  pinnedDayCell,
+  pinnedTimeCell,
+} from "@/components/elements/schedule-table-cells"
+import {
   Table,
   TableBody,
   TableCell,
@@ -14,12 +21,9 @@ import {
   createAvailabilityTable,
   DAY_LABELS,
   DAYS,
-  formatTime,
   type Lesson,
   type RoomAvailabilityMode,
 } from "@/lib/schedule"
-
-const SHORT_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
 interface RoomsTableProps {
   week?: WeekSelection
@@ -60,21 +64,25 @@ export function RoomsTable({
   }, [allDays, selectedRooms, showEmptyRows])
 
   return (
-    <Table className="table-fixed">
+    <Table className={`${scheduleTableLayout} table-fixed`}>
       <TableCaption className="sr-only">
         {mode === "free" ? "Свободные" : "Занятые"} аудитории по дням и времени. Учитываются
         выбранная чётность недели и только аудитории, встречающиеся в расписании. Время по
         Красноярску. Доступность зависит от полноты исходных данных.
       </TableCaption>
       <colgroup>
-        <col className="w-11 sm:w-40" />
-        <col className="w-[76px] sm:w-[148px]" />
+        <col className="w-(--schedule-day-width)" />
+        <col className="w-(--schedule-time-width)" />
         <col />
       </colgroup>
       <TableHeader>
         <TableRow>
-          <TableHead scope="col">День</TableHead>
-          <TableHead scope="col">Время</TableHead>
+          <TableHead scope="col" className={`${pinnedDayCell} z-30`}>
+            День
+          </TableHead>
+          <TableHead scope="col" className={`${pinnedTimeCell} z-30`}>
+            Время
+          </TableHead>
           <TableHead scope="col">Аудитории</TableHead>
         </TableRow>
       </TableHeader>
@@ -128,26 +136,14 @@ export function RoomsTable({
                     <TableHead
                       scope="rowgroup"
                       rowSpan={intervals.length}
-                      className="align-top"
+                      className={pinnedDayCell}
                       aria-label={DAY_LABELS[dayIndex]}
                     >
-                      <span>
-                        <span className="hidden sm:inline">{DAY_LABELS[dayIndex]}</span>
-                        <abbr className="no-underline sm:hidden" title={DAY_LABELS[dayIndex]}>
-                          {SHORT_DAYS[dayIndex]}
-                        </abbr>
-                      </span>
+                      <ScheduleDay weekday={day} />
                     </TableHead>
                   )}
-                  <TableCell className="align-top tabular-nums">
-                    <span className="inline-flex flex-col flex-wrap gap-px leading-normal sm:flex-row sm:gap-1">
-                      <time dateTime={formatTime(start)}>{formatTime(start)}</time>
-                      <span className="hidden sm:inline" aria-hidden="true">
-                        –
-                      </span>
-                      <span className="sr-only"> до </span>
-                      <time dateTime={formatTime(end)}>{formatTime(end)}</time>
-                    </span>
+                  <TableCell className={pinnedTimeCell}>
+                    <ScheduleTime start={start} end={end} />
                   </TableCell>
                   <TableCell className="align-top whitespace-normal">
                     {rooms.length > 0 ? (
