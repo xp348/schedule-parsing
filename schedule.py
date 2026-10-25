@@ -165,6 +165,22 @@ def get_classroom(sheet, row, column):
     return None
 
 
+def get_week_parity(lesson):
+    """Распознаёт только явную начальную пометку «н.» или «ч.»."""
+    match = re.match(r"^\s*([нч])\.\s*", lesson, flags=re.IGNORECASE)
+    if not match:
+        return None
+
+    remainder = lesson[match.end():]
+    # Составные и противоречивые обозначения не считаем стандартным случаем.
+    if re.match(r"^(?:[нч]\.|[/,;|])", remainder, flags=re.IGNORECASE):
+        return None
+    if re.search(r"[;|/]\s*[нч]\.", remainder, flags=re.IGNORECASE):
+        return None
+
+    return {"н": "odd", "ч": "even"}[match.group(1).casefold()]
+
+
 def get_lessons(sheet, groups, weekdays, times):
     """Собирает занятия по столбцам групп. Ожидает словари с размерами ячеек."""
     lessons = []
@@ -201,6 +217,7 @@ def get_lessons(sheet, groups, weekdays, times):
                 "time": time,
                 "weekday": weekday,
                 "lesson": lesson,
+                "week_parity": get_week_parity(lesson),
                 "classroom": classroom,
             })
 
