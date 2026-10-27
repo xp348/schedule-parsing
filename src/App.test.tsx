@@ -54,7 +54,7 @@ describe("minimal timetable interface", () => {
     const user = userEvent.setup()
     render(<App />)
     await screen.findByText("М-102")
-    for (const name of ["Аудитории", "Группы", "Предметы"]) {
+    for (const name of ["Аудитории", "Группы", "Пары"]) {
       await user.click(screen.getByRole("tab", { name }))
       const table = screen.getByRole("table")
       const currentRows = table.querySelectorAll('tr[data-current-time="true"]')
@@ -75,7 +75,7 @@ describe("minimal timetable interface", () => {
     await screen.findByText("М-102")
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Группы",
-      "Предметы",
+      "Пары",
       "Аудитории",
       "Прочее",
     ])
@@ -164,7 +164,7 @@ describe("minimal timetable interface", () => {
     expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("102")
     expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
     expect(within(screen.getByRole("table")).queryByText("08:40")).toBeNull()
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
     await user.click(screen.getByRole("tab", { name: "Аудитории" }))
     expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("102")
     expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
@@ -275,7 +275,7 @@ describe("minimal timetable interface", () => {
     expect(secondCells[programmingColumn].textContent).toBe("")
     expect(within(secondCells[mathColumn]).getByText("Математика")).toBeTruthy()
     expect(within(secondCells[mathColumn]).getByText("Аудитория: М-102")).toBeTruthy()
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
     const subjectsTable = screen.getByRole("table")
     expect(
       within(subjectsTable)
@@ -298,7 +298,7 @@ describe("minimal timetable interface", () => {
     const faculty = await screen.findByRole("toolbar", { name: "Факультет" })
     await user.click(within(faculty).getByRole("button", { name: "Факультет не указан" }))
     expect(screen.queryByRole("table")).toBeNull()
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
     await user.click(screen.getByRole("tab", { name: "Группы" }))
     expect(screen.queryByRole("table")).toBeNull()
     const option = within(screen.getByRole("toolbar", { name: "Факультет" })).getByRole("button", {
@@ -317,7 +317,7 @@ describe("minimal timetable interface", () => {
     await user.click(screen.getByRole("option", { name: "ИЭ-26" }))
     await user.click(screen.getByRole("switch", { name: "Исключать выбранные группы" }))
     await user.type(screen.getByRole("searchbox", { name: "Поиск по ячейкам" }), "Математика")
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
     await user.click(screen.getByRole("tab", { name: "Группы" }))
     expect(screen.getByRole("button", { name: "Убрать группу ИЭ-26" })).toBeTruthy()
     expect(
@@ -356,7 +356,7 @@ describe("minimal timetable interface", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(2)
     expect(within(table).getByText("08:40")).toBeTruthy()
     expect(within(table).queryByText("10:20")).toBeNull()
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
     await user.click(screen.getByRole("tab", { name: "Аудитории" }))
     expect(screen.getByRole("radio", { name: "Занятые" }).getAttribute("aria-checked")).toBe("true")
     expect(screen.getByRole("button", { name: "Убрать аудиторию М-101" })).toBeTruthy()
@@ -373,24 +373,30 @@ describe("minimal timetable interface", () => {
       json: async () => [...fixtures, { ...fixtures[0], lesson: "Теория   вероятностей" }],
     } as Response)
     render(<App />)
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
     await screen.findByText("Математика")
-    const input = screen.getByRole("searchbox", { name: "Поиск по предмету" })
+    const input = screen.getByRole("searchbox", { name: "Поиск по предмету или аудитории" })
     await user.type(input, "  МАТЕМАТИКА  ")
     expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(2)
     expect(screen.getByText("Математика")).toBeTruthy()
     expect(screen.queryByText("Программирование")).toBeNull()
     await user.click(screen.getByRole("tab", { name: "Аудитории" }))
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
-    const restoredInput = screen.getByRole("searchbox", { name: "Поиск по предмету" })
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
+    const restoredInput = screen.getByRole("searchbox", { name: "Поиск по предмету или аудитории" })
     expect((restoredInput as HTMLInputElement).value).toBe("  МАТЕМАТИКА  ")
     await user.clear(restoredInput)
     await user.type(restoredInput, "вероятностёй")
     expect(screen.getByText("Теория вероятностей")).toBeTruthy()
     await user.clear(restoredInput)
     await user.type(restoredInput, "М-101")
-    expect(screen.getByRole("status").textContent).toBe("Предметы по запросу не найдены.")
-    await user.click(screen.getByRole("button", { name: "Очистить поиск по предмету" }))
+    expect(screen.getByText("Программирование")).toBeTruthy()
+    expect(screen.getByText("Теория вероятностей")).toBeTruthy()
+    expect(screen.queryByText("Математика")).toBeNull()
+    expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(3)
+    await user.clear(restoredInput)
+    await user.type(restoredInput, "М-999")
+    expect(screen.getByRole("status").textContent).toBe("Пары по запросу не найдены.")
+    await user.click(screen.getByRole("button", { name: "Очистить поиск пар" }))
     expect((restoredInput as HTMLInputElement).value).toBe("")
     expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(4)
   })
@@ -464,8 +470,8 @@ describe("minimal timetable interface", () => {
       json: async () => [...fixtures, { ...fixtures[1], weekday: "ВТОРНИК", time: "12.10-13.40" }],
     } as Response)
     render(<App />)
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
-    const input = screen.getByRole("searchbox", { name: "Поиск по предмету" })
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
+    const input = screen.getByRole("searchbox", { name: "Поиск по предмету или аудитории" })
     await user.type(input, "Программирование")
     await screen.findByText("Программирование")
     expect(screen.getAllByRole("row")).toHaveLength(2)
@@ -480,7 +486,7 @@ describe("minimal timetable interface", () => {
     await user.type(input, "нет совпадений")
     expect(screen.getAllByRole("row")).toHaveLength(4)
     await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
-    expect(screen.getByRole("status").textContent).toBe("Предметы по запросу не найдены.")
+    expect(screen.getByRole("status").textContent).toBe("Пары по запросу не найдены.")
     expect(screen.getAllByRole("row")).toHaveLength(2)
   })
 
@@ -503,14 +509,21 @@ describe("minimal timetable interface", () => {
       await user.click(within(screen.getByRole("toolbar", { name })).getByRole("button"))
     }
     await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
-    await user.click(screen.getByRole("tab", { name: "Предметы" }))
-    await user.type(screen.getByRole("searchbox", { name: "Поиск по предмету" }), "Матем")
+    await user.click(screen.getByRole("tab", { name: "Пары" }))
+    await user.type(
+      screen.getByRole("searchbox", { name: "Поиск по предмету или аудитории" }),
+      "Матем",
+    )
     await user.click(screen.getByRole("switch", { name: "Показывать пустые дни и время" }))
     firstVisit.unmount()
     render(<App />)
-    expect(screen.getByRole("tab", { name: "Предметы" }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByRole("tab", { name: "Пары" }).getAttribute("aria-selected")).toBe("true")
     expect(
-      (screen.getByRole("searchbox", { name: "Поиск по предмету" }) as HTMLInputElement).value,
+      (
+        screen.getByRole("searchbox", {
+          name: "Поиск по предмету или аудитории",
+        }) as HTMLInputElement
+      ).value,
     ).toBe("Матем")
     expect(
       screen

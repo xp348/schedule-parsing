@@ -11,7 +11,7 @@ import { useSchedulePreferences } from "@/hooks/use-schedule-preferences"
 
 const sections = [
   { value: "groups", label: "Группы" },
-  { value: "subjects", label: "Предметы" },
+  { value: "subjects", label: "Пары" },
   { value: "rooms", label: "Аудитории" },
   { value: "other", label: "Прочее" },
 ] as const

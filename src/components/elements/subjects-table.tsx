@@ -65,7 +65,9 @@ export function SubjectsTable({
     const matches = allRows.filter(
       (row) =>
         matchesWeek(row.weekParity, week) &&
-        (!normalized || normalizeSubject(row.subject).includes(normalized)),
+        (!normalized ||
+          normalizeSubject(row.subject).includes(normalized) ||
+          normalizeSubject(row.classroom ?? "").includes(normalized)),
     )
     return showEmptyRows ? addEmptySubjectSlots(lessons, matches) : matches
   }, [allRows, query, showEmptyRows, lessons, week])
@@ -82,8 +84,8 @@ export function SubjectsTable({
       <div className="relative my-4 w-[27.5rem] max-w-full">
         <Input
           type="search"
-          aria-label="Поиск по предмету"
-          placeholder="Найти предмет…"
+          aria-label="Поиск по предмету или аудитории"
+          placeholder="Предмет или аудитория…"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           className="pr-11 [&::-webkit-search-cancel-button]:appearance-none"
@@ -94,7 +96,7 @@ export function SubjectsTable({
             variant="ghost"
             size="icon-sm"
             className="absolute top-1/2 right-1 -translate-y-1/2"
-            aria-label="Очистить поиск по предмету"
+            aria-label="Очистить поиск пар"
             onClick={() => onQueryChange("")}
           >
             <BroomIcon />
@@ -115,7 +117,7 @@ export function SubjectsTable({
           <col className="w-28 sm:w-40" />
         </colgroup>
         <TableCaption className="sr-only">
-          Предметы по дням и времени, с группами и аудиториями.
+          Пары по дням и времени, с группами и аудиториями.
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -160,10 +162,10 @@ export function SubjectsTable({
               <TableCell colSpan={5}>
                 <span role="status">
                   {allRows.length && normalizeSubject(query)
-                    ? "Предметы по запросу не найдены."
+                    ? "Пары по запросу не найдены."
                     : allRows.length && week !== "all"
-                      ? "Для выбранной недели предметы не найдены."
-                      : "В расписании нет предметов."}
+                      ? "Для выбранной недели пары не найдены."
+                      : "В расписании нет пар."}
                 </span>
               </TableCell>
             </TableRow>

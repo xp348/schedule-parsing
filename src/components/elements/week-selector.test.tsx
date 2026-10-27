@@ -33,7 +33,7 @@ afterEach(() => {
   localStorage.clear()
 })
 
-it.each(["Группы", "Предметы"])(
+it.each(["Группы", "Пары"])(
   "filters lesson variants in %s and combines week selection with search",
   async (tab) => {
     const user = userEvent.setup()
@@ -50,7 +50,7 @@ it.each(["Группы", "Предметы"])(
     expect(screen.getByText("Чётная пара")).toBeTruthy()
     expect(screen.getByText("Без пометки")).toBeTruthy()
     const query = screen.getByRole("searchbox", {
-      name: tab === "Группы" ? "Поиск по ячейкам" : "Поиск по предмету",
+      name: tab === "Группы" ? "Поиск по ячейкам" : "Поиск по предмету или аудитории",
     })
     await user.type(query, "Без пометки")
     expect(screen.queryByText("Чётная пара")).toBeNull()
@@ -85,11 +85,11 @@ it("restores independent week selections for all three tabs after reopening", as
   await user.click(screen.getByRole("tab", { name: "Группы" }))
   expect(week("Обе недели").getAttribute("aria-checked")).toBe("true")
   await user.click(week("Чётная"))
-  await user.click(screen.getByRole("tab", { name: "Предметы" }))
+  await user.click(screen.getByRole("tab", { name: "Пары" }))
   await user.click(week("Нечётная"))
   first.unmount()
   render(<App />)
-  expect(screen.getByRole("tab", { name: "Предметы" }).getAttribute("aria-selected")).toBe("true")
+  expect(screen.getByRole("tab", { name: "Пары" }).getAttribute("aria-selected")).toBe("true")
   expect(week("Нечётная").getAttribute("aria-checked")).toBe("true")
   await user.click(screen.getByRole("tab", { name: "Группы" }))
   expect(week("Чётная").getAttribute("aria-checked")).toBe("true")

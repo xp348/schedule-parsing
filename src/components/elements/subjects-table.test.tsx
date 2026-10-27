@@ -60,7 +60,7 @@ it("handles loading, failures with retry, and empty results within the table", a
   await userEvent.setup().click(screen.getByRole("button", { name: "Попробовать снова" }))
   expect(onRetry).toHaveBeenCalledOnce()
   view.rerender(<SubjectsTable query="" onQueryChange={() => {}} {...props} loading={false} />)
-  expect(screen.getByText("В расписании нет предметов.").closest("table")).toBeTruthy()
+  expect(screen.getByText("В расписании нет пар.").closest("table")).toBeTruthy()
 })
 
 it("merges day and time cells within each day and recalculates spans after search", () => {
