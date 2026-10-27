@@ -41,16 +41,43 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 describe("minimal timetable interface", () => {
-  it("shows only three tabs and a table with exactly three columns", async () => {
+  it.each([
+    ["2026-10-26T02:00:00Z", "08:40"],
+    ["2026-10-26T03:15:00Z", "10:20"],
+  ])("highlights the current or next interval in all three tables at %s", async (now, time) => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date(now))
+    const user = userEvent.setup()
+    render(<App />)
+    await screen.findByText("М-102")
+    for (const name of ["Аудитории", "Группы", "Предметы"]) {
+      await user.click(screen.getByRole("tab", { name }))
+      const table = screen.getByRole("table")
+      const currentRows = table.querySelectorAll('tr[data-current-time="true"]')
+      expect(currentRows).toHaveLength(1)
+      expect(currentRows[0].getAttribute("data-current-day")).toBe("true")
+      expect(within(currentRows[0] as HTMLElement).getByText(time)).toBeTruthy()
+      expect(table.querySelectorAll('tr[data-current-day="true"]')).toHaveLength(2)
+      expect(
+        within(currentRows[0] as HTMLElement)
+          .getByText(time)
+          .closest("td")?.className,
+      ).toContain("bg-neutral-200")
+    }
+  })
+
+  it("shows four tabs and a room table with exactly three columns", async () => {
     render(<App />)
     await screen.findByText("М-102")
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Группы",
       "Предметы",
       "Аудитории",
+      "Прочее",
     ])
     const table = screen.getByRole("table")
     expect(

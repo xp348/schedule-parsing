@@ -1,3 +1,6 @@
+import { useScheduleClock } from "@/hooks/use-schedule-clock"
+import { getScheduleHighlight, getNextScheduleStart } from "@/lib/schedule-clock"
+import { cn } from "@/lib/utils"
 import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import {
@@ -6,6 +9,9 @@ import {
   scheduleTableLayout,
   pinnedDayCell,
   pinnedTimeCell,
+  currentScheduleRow,
+  currentDayCell,
+  currentTimeCell,
 } from "@/components/elements/schedule-table-cells"
 import {
   Table,
@@ -46,6 +52,7 @@ export function RoomsTable({
   onRetry,
   selectedRooms,
 }: RoomsTableProps) {
+  const clock = useScheduleClock()
   const allDays = useMemo(() => createAvailabilityTable(lessons, mode, week), [lessons, mode, week])
   const days = useMemo(() => {
     return allDays
@@ -62,6 +69,11 @@ export function RoomsTable({
       }))
       .filter((day) => day.intervals.length > 0)
   }, [allDays, selectedRooms, showEmptyRows])
+
+  const nextStart = getNextScheduleStart(
+    clock,
+    days.flatMap(({ day, intervals }) => intervals.map((interval) => ({ weekday: day, interval }))),
+  )
 
   return (
     <Table className={`${scheduleTableLayout} table-fixed`}>
@@ -130,39 +142,47 @@ export function RoomsTable({
           const dayIndex = DAYS.indexOf(day)
           return (
             <TableBody key={day} aria-label={DAY_LABELS[dayIndex]}>
-              {intervals.map(({ start, end, rooms }, index) => (
-                <TableRow key={`${start}-${end}`}>
-                  {index === 0 && (
-                    <TableHead
-                      scope="rowgroup"
-                      rowSpan={intervals.length}
-                      className={pinnedDayCell}
-                      aria-label={DAY_LABELS[dayIndex]}
-                    >
-                      <ScheduleDay weekday={day} />
-                    </TableHead>
-                  )}
-                  <TableCell className={pinnedTimeCell}>
-                    <ScheduleTime start={start} end={end} />
-                  </TableCell>
-                  <TableCell className="align-top whitespace-normal">
-                    {rooms.length > 0 ? (
-                      <ul
-                        className="flex flex-wrap gap-2"
-                        aria-label={mode === "free" ? "Свободные аудитории" : "Занятые аудитории"}
+              {intervals.map(({ start, end, rooms }, index) => {
+                const highlight = getScheduleHighlight(clock, day, { start, end }, nextStart)
+                return (
+                  <TableRow
+                    key={`${start}-${end}`}
+                    className={currentScheduleRow}
+                    data-current-day={highlight.day}
+                    data-current-time={highlight.time}
+                  >
+                    {index === 0 && (
+                      <TableHead
+                        scope="rowgroup"
+                        rowSpan={intervals.length}
+                        className={cn(pinnedDayCell, highlight.day && currentDayCell)}
+                        aria-label={DAY_LABELS[dayIndex]}
                       >
-                        {rooms.map((room) => (
-                          <li key={room}>{room}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        {mode === "free" ? "Нет свободных аудиторий" : "Нет занятых аудиторий"}
-                      </span>
+                        <ScheduleDay weekday={day} />
+                      </TableHead>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell className={cn(pinnedTimeCell, highlight.time && currentTimeCell)}>
+                      <ScheduleTime start={start} end={end} />
+                    </TableCell>
+                    <TableCell className="align-top whitespace-normal">
+                      {rooms.length > 0 ? (
+                        <ul
+                          className="flex flex-wrap gap-2"
+                          aria-label={mode === "free" ? "Свободные аудитории" : "Занятые аудитории"}
+                        >
+                          {rooms.map((room) => (
+                            <li key={room}>{room}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {mode === "free" ? "Нет свободных аудиторий" : "Нет занятых аудиторий"}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           )
         })

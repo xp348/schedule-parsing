@@ -1,3 +1,6 @@
+import { useScheduleClock } from "@/hooks/use-schedule-clock"
+import { getScheduleHighlight, getNextScheduleStart } from "@/lib/schedule-clock"
+import { cn } from "@/lib/utils"
 import { matchesWeek, type WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import {
@@ -6,6 +9,9 @@ import {
   scheduleTableLayout,
   pinnedDayCell,
   pinnedTimeCell,
+  currentScheduleRow,
+  currentDayCell,
+  currentTimeCell,
 } from "@/components/elements/schedule-table-cells"
 import { BroomIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -19,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DAYS, DAY_LABELS, type Lesson } from "@/lib/schedule"
+import { DAYS, DAY_LABELS, parseTime, type Lesson } from "@/lib/schedule"
 import { createSubjectsTable, addEmptySubjectSlots, getSubjectRowSpans } from "@/lib/subjects"
 
 interface SubjectsTableProps {
@@ -52,6 +58,7 @@ export function SubjectsTable({
   query,
   onQueryChange,
 }: SubjectsTableProps) {
+  const clock = useScheduleClock()
   const allRows = useMemo(() => createSubjectsTable(lessons), [lessons])
   const rows = useMemo(() => {
     const normalized = normalizeSubject(query)
@@ -62,6 +69,11 @@ export function SubjectsTable({
     )
     return showEmptyRows ? addEmptySubjectSlots(lessons, matches) : matches
   }, [allRows, query, showEmptyRows, lessons, week])
+
+  const nextStart = getNextScheduleStart(
+    clock,
+    rows.map((row) => ({ weekday: row.weekday, interval: parseTime(row.time) })),
+  )
 
   const rowSpans = useMemo(() => getSubjectRowSpans(rows), [rows])
 
@@ -158,12 +170,23 @@ export function SubjectsTable({
           ) : (
             rows.map((row, index) => {
               const dayIndex = DAYS.findIndex((day) => day === row.weekday)
+              const highlight = getScheduleHighlight(
+                clock,
+                row.weekday,
+                parseTime(row.time),
+                nextStart,
+              )
               return (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  className={currentScheduleRow}
+                  data-current-day={highlight.day}
+                  data-current-time={highlight.time}
+                >
                   {rowSpans[index].day > 0 && (
                     <TableCell
                       rowSpan={rowSpans[index].day}
-                      className={pinnedDayCell}
+                      className={cn(pinnedDayCell, highlight.day && currentDayCell)}
                       aria-label={
                         dayIndex >= 0 ? DAY_LABELS[dayIndex] : row.weekday || "Дата не указана"
                       }
@@ -172,7 +195,10 @@ export function SubjectsTable({
                     </TableCell>
                   )}
                   {rowSpans[index].time > 0 && (
-                    <TableCell rowSpan={rowSpans[index].time} className={pinnedTimeCell}>
+                    <TableCell
+                      rowSpan={rowSpans[index].time}
+                      className={cn(pinnedTimeCell, highlight.time && currentTimeCell)}
+                    >
                       <ScheduleTimeValue value={row.time} />
                     </TableCell>
                   )}

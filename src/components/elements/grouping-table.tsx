@@ -1,3 +1,6 @@
+import { useScheduleClock } from "@/hooks/use-schedule-clock"
+import { getScheduleHighlight, getNextScheduleStart } from "@/lib/schedule-clock"
+import { cn } from "@/lib/utils"
 import type { WeekSelection } from "@/lib/week-parity"
 import { useMemo } from "react"
 import {
@@ -6,6 +9,9 @@ import {
   scheduleTableLayout,
   pinnedDayCell,
   pinnedTimeCell,
+  currentScheduleRow,
+  currentDayCell,
+  currentTimeCell,
 } from "@/components/elements/schedule-table-cells"
 import { GroupingFilters } from "@/components/elements/grouping-filters"
 import { GroupLesson } from "@/components/elements/group-lesson"
@@ -57,6 +63,7 @@ export function GroupingTable({
   search,
   onSearchChange,
 }: GroupingTableProps) {
+  const clock = useScheduleClock()
   const all = useMemo(() => createGroupingTable(lessons), [lessons])
   const options = useMemo(() => getGroupingFilterOptions(all.columns), [all.columns])
   const columns = useMemo(
@@ -91,6 +98,11 @@ export function GroupingTable({
             .filter(({ intervals }) => intervals.length > 0)
         : all.days,
     [all.days, columns, showEmptyRows],
+  )
+
+  const nextStart = getNextScheduleStart(
+    clock,
+    days.flatMap(({ day, intervals }) => intervals.map((interval) => ({ weekday: day, interval }))),
   )
 
   const headerRows = columns.length ? headers : [[]]
@@ -196,42 +208,50 @@ export function GroupingTable({
           {days.length ? (
             days.map(({ day, intervals }) => (
               <TableBody key={day}>
-                {intervals.map(({ start, end }, index) => (
-                  <TableRow key={`${start}-${end}`}>
-                    {index === 0 && (
-                      <TableHead
-                        scope="rowgroup"
-                        rowSpan={intervals.length}
-                        className={pinnedDayCell}
-                        aria-label={DAY_LABELS[DAYS.indexOf(day)]}
-                      >
-                        <ScheduleDay weekday={day} />
-                      </TableHead>
-                    )}
-                    <TableCell className={pinnedTimeCell}>
-                      <ScheduleTime start={start} end={end} />
-                    </TableCell>
-                    {columns.map(({ id, lessonsBySlot }) => {
-                      const entries = lessonsBySlot.get(groupingSlotKey(day, start, end)) ?? []
-                      return (
-                        <TableCell
-                          key={id}
-                          className="border-r align-top whitespace-normal wrap-anywhere"
+                {intervals.map(({ start, end }, index) => {
+                  const highlight = getScheduleHighlight(clock, day, { start, end }, nextStart)
+                  return (
+                    <TableRow
+                      key={`${start}-${end}`}
+                      className={currentScheduleRow}
+                      data-current-day={highlight.day}
+                      data-current-time={highlight.time}
+                    >
+                      {index === 0 && (
+                        <TableHead
+                          scope="rowgroup"
+                          rowSpan={intervals.length}
+                          className={cn(pinnedDayCell, highlight.day && currentDayCell)}
+                          aria-label={DAY_LABELS[DAYS.indexOf(day)]}
                         >
-                          {entries.length > 0 && (
-                            <ul className="space-y-3" aria-label="Занятия группы">
-                              {entries.map((lesson, lessonIndex) => (
-                                <li key={lessonIndex}>
-                                  <GroupLesson lesson={lesson} />
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                ))}
+                          <ScheduleDay weekday={day} />
+                        </TableHead>
+                      )}
+                      <TableCell className={cn(pinnedTimeCell, highlight.time && currentTimeCell)}>
+                        <ScheduleTime start={start} end={end} />
+                      </TableCell>
+                      {columns.map(({ id, lessonsBySlot }) => {
+                        const entries = lessonsBySlot.get(groupingSlotKey(day, start, end)) ?? []
+                        return (
+                          <TableCell
+                            key={id}
+                            className="border-r align-top whitespace-normal wrap-anywhere"
+                          >
+                            {entries.length > 0 && (
+                              <ul className="space-y-3" aria-label="Занятия группы">
+                                {entries.map((lesson, lessonIndex) => (
+                                  <li key={lessonIndex}>
+                                    <GroupLesson lesson={lesson} />
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             ))
           ) : (

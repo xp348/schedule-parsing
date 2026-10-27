@@ -7,7 +7,7 @@ import { restoreWeekSelection, type WeekSelection } from "@/lib/week-parity"
 type ScheduleTab = "groups" | "subjects" | "rooms"
 
 interface SchedulePreferences {
-  activeTab: ScheduleTab
+  activeTab: ScheduleTab | "other"
   weekSelection: Record<ScheduleTab, WeekSelection>
   showEmptyRows: Record<ScheduleTab, boolean>
   subjectQuery: string
@@ -39,7 +39,9 @@ function restorePreferences(value: unknown): SchedulePreferences {
 
   return {
     activeTab:
-      saved.activeTab === "groups" || saved.activeTab === "subjects" ? saved.activeTab : "rooms",
+      saved.activeTab === "groups" || saved.activeTab === "subjects" || saved.activeTab === "other"
+        ? saved.activeTab
+        : "rooms",
     weekSelection: {
       groups: restoreWeekSelection(weeks.groups),
       subjects: restoreWeekSelection(weeks.subjects),

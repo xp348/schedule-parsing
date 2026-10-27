@@ -5,6 +5,10 @@ export const scheduleTableLayout =
 export const pinnedDayCell = "sticky left-0 z-20 border-r bg-background align-top"
 export const pinnedTimeCell =
   "sticky left-(--schedule-day-width) z-20 border-r bg-background align-top tabular-nums whitespace-normal"
+export const currentScheduleRow =
+  "data-[current-time=true]:bg-neutral-200 data-[current-time=true]:hover:bg-neutral-200 dark:data-[current-time=true]:bg-neutral-800 dark:data-[current-time=true]:hover:bg-neutral-800"
+export const currentDayCell = "bg-neutral-200 font-semibold dark:bg-neutral-800"
+export const currentTimeCell = currentDayCell
 export const shortDayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
 export function ScheduleDay({ weekday }: { weekday: string }) {

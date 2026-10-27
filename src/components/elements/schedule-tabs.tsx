@@ -3,6 +3,7 @@ import { EmptyRowsToggle } from "@/components/elements/empty-rows-toggle"
 import { GroupingTable } from "@/components/elements/grouping-table"
 import { SubjectsTable } from "@/components/elements/subjects-table"
 import { Rooms } from "@/components/elements/rooms"
+import { Other } from "@/components/elements/other"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useRoomSearch } from "@/hooks/use-room-search"
@@ -12,6 +13,7 @@ const sections = [
   { value: "groups", label: "Группы" },
   { value: "subjects", label: "Предметы" },
   { value: "rooms", label: "Аудитории" },
+  { value: "other", label: "Прочее" },
 ] as const
 
 export function ScheduleTabs() {
@@ -25,20 +27,20 @@ export function ScheduleTabs() {
     groupingSearch,
     excludedValues,
   } = preferences
-  const { lessons, loading, error, reload } = useSchedule()
+  const { lessons, metadata, loading, error, reload } = useSchedule()
   const { selectedRooms, query, setSelectedRooms, setQuery } = useRoomSearch()
 
   return (
     <Tabs
       value={activeTab}
       onValueChange={(value) => {
-        if (value === "groups" || value === "subjects" || value === "rooms")
+        if (value === "groups" || value === "subjects" || value === "rooms" || value === "other")
           updatePreference("activeTab", value)
       }}
     >
       <TabsList aria-label="Разделы расписания" className="w-full sm:w-fit">
         {sections.map(({ value, label }) => (
-          <TabsTrigger key={value} value={value}>
+          <TabsTrigger key={value} value={value} className="px-1 text-xs sm:px-2 sm:text-sm">
             {label}
           </TabsTrigger>
         ))}
@@ -126,6 +128,9 @@ export function ScheduleTabs() {
           onQueryChange={setQuery}
           onRoomsChange={setSelectedRooms}
         />
+      </TabsContent>
+      <TabsContent value="other" className="m-0 min-w-0">
+        <Other metadata={metadata} loading={loading} />
       </TabsContent>
     </Tabs>
   )
